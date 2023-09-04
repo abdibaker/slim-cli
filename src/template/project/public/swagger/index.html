@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Swagger UI</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/swagger-ui-dist@5.4.2/swagger-ui.css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/swagger-ui-dist@5.4.2/swagger/index.css"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://unpkg.com/swagger-ui-dist@5.4.2/favicon-32x32.png"
+      sizes="32x32"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      href="https://unpkg.com/swagger-ui-dist@5.4.2/favicon-16x16.png"
+      sizes="16x16"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      .download-url-wrapper {
+        display: none !important;
+      }
+
+      .url {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="swagger-ui" />
+    <script src="https://unpkg.com/swagger-ui-dist@5.4.2/swagger-ui-standalone-preset.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.4.2/swagger-ui-bundle.js"></script>
+    <script>
+      window.onload = function () {
+        window.ui = SwaggerUIBundle({
+          url: '/swagger',
+          dom_id: '#swagger-ui',
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+          plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+          layout: 'StandaloneLayout',
+        });
+      };
+    </script>
+  </body>
+</html>
