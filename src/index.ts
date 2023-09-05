@@ -52,6 +52,40 @@ async function fetchPrimaryKey(tableName: string) {
   }
 }
 
+async function fetchPrimaryKeyType(tableName: string, primaryKey: string) {
+  try {
+    const [rows] = (await conn.query(`DESCRIBE ${tableName}`)) as any;
+    return rows.length > 0
+      ? getDataType(rows.find((row: any) => row.Field === primaryKey).Type)
+      : { type: 'integer' };
+  } catch (error) {
+    throw error;
+  }
+}
+
+function getDataType(type: string) {
+  let dataType;
+  if (type.includes('int')) {
+    dataType = { type: 'integer' };
+  } else if (type.includes('varchar')) {
+    dataType = { type: 'string' };
+  } else if (type.startsWith('enum')) {
+    dataType = {
+      type: 'string',
+      enum: type.match(/'([^']+)'/g)?.map(value => value.replace(/'/g, '')),
+    };
+  } else if ((type = 'double')) {
+    dataType = {
+      type: 'number',
+    };
+  } else {
+    dataType = {
+      type: 'string',
+    };
+  }
+  return dataType;
+}
+
 async function fetchAllColumn(tableName: string) {
   try {
     const [rows] = (await conn.query(
@@ -172,7 +206,7 @@ async function fetchAllColumn(tableName: string) {
       .map((column: {}) => Object.keys(column)[0])
       .join(', ');
 
-    const selectedColumns = result.insertDto.reduce(
+    const selectedColumns = result.columns.reduce(
       (result: any, item: any) => {
         const key = Object.keys(item)[0]; // Get the key from the current object
         if (!key) {
@@ -233,6 +267,10 @@ async function generateComponents() {
       },
     ]);
     const primaryKeyColumnName = await fetchPrimaryKey(tableName);
+    const primaryKeyType = await fetchPrimaryKeyType(
+      tableName,
+      primaryKeyColumnName
+    );
     const {
       columnsToSelect,
       selectedColumns,
@@ -274,6 +312,7 @@ async function generateComponents() {
         const replacedContent = replaceTemplatePlaceholders(templateContent, {
           tableName,
           primaryKeyColumnName,
+          primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
           pluralName,
           pluralNameLowFirst,
           columnsToSelect,
@@ -335,6 +374,7 @@ async function generateComponents() {
         pluralNameLowFirst,
         pluralName,
         primaryKeyColumnName,
+        primaryKeyType: JSON.stringify(primaryKeyType),
         selectedColumns,
         columnsToInsert,
         columnsToUpdate,

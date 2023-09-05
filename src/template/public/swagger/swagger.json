@@ -16,7 +16,8 @@
             }
           }
         }
-      }
+      },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }
   },
   "post": {
@@ -41,19 +42,20 @@
           }
         }
       },
-      "400": { "description": "Invalid status value" }
+      "400": { "description": "Invalid status value" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }
   }
 },
-"/{{pluralNameLowFirst}}/{{primaryKeyColumnName}}": {
+"/{{pluralNameLowFirst}}/{{{primaryKeyColumnName}}}": {
   "get": {
     "tags": ["{{pluralName}}"],
     "parameters": [
       {
-        "name": "primaryKeyColumnName",
+        "name": "{{primaryKeyColumnName}}",
         "in": "path",
         "required": true,
-        "schema": { "type": "string" }
+        "schema": {{primaryKeyType}}
       }
     ],
     "responses": {
@@ -69,7 +71,8 @@
         }
       },
       "400": { "description": "Invalid primaryKeyColumnName supplied" },
-      "404": { "description": "Not found" }
+      "404": { "description": "Not found" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }
   },
   "put": {
@@ -77,9 +80,9 @@
     "parameters": [
       {
         "in": "path",
-        "name": "primaryKeyColumnName",
+        "name": "{{primaryKeyColumnName}}",
         "required": true,
-        "schema": { "type": "string" }
+        "schema": {{primaryKeyType}}
       }
     ],
     "requestBody": {
@@ -102,22 +105,24 @@
           }
         }
       },
-      "404": { "description": "School not found" }
+      "404": { "description": "{{pluralName}} not found" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }
   },
   "delete": {
     "tags": ["{{pluralName}}"],
     "parameters": [
       {
-        "name": "primaryKeyColumnName",
+        "name": "{{primaryKeyColumnName}}",
         "in": "path",
         "required": true,
-        "schema": { "type": "string" }
+        "schema": {{primaryKeyType}}
       }
     ],
     "responses": {
       "200": { "description": "successful operation" },
-      "404": { "description": "School not found" }
+      "404": { "description": "School not found" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }
   }
 }

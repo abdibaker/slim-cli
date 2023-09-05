@@ -23,7 +23,7 @@ final class {{pluralName}}Service
   }
 
 
-  public function getOne(string ${{primaryKeyColumnName}}): array
+  public function getOne({{primaryKeyType}} ${{primaryKeyColumnName}}): array
   {
     $result = $this->conn->fetchAssociative(
       'SELECT {{columnsToSelect}} 
@@ -43,12 +43,12 @@ final class {{pluralName}}Service
     return $this->conn->insert('{{tableName}}', $data);
   }
 
-  public function update(string ${{primaryKeyColumnName}}, $data): int|string
+  public function update({{primaryKeyType}} ${{primaryKeyColumnName}}, $data): int|string
   {
     return $this->conn->update('{{tableName}}', $data, ['{{primaryKeyColumnName}}' => ${{primaryKeyColumnName}}]);
   }
 
-  public function delete(string ${{primaryKeyColumnName}}): int|string
+  public function delete({{primaryKeyType}} ${{primaryKeyColumnName}}): int|string
   {
     return $this->conn->delete('{{tableName}}', ['{{primaryKeyColumnName}}' => ${{primaryKeyColumnName}}]);
   }
