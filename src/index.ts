@@ -206,18 +206,15 @@ async function fetchAllColumn(tableName: string) {
       .map((column: {}) => Object.keys(column)[0])
       .join(', ');
 
-    const selectedColumns = result.columns.reduce(
-      (result: any, item: any) => {
-        const key = Object.keys(item)[0]; // Get the key from the current object
-        if (!key) {
-          return;
-        }
-        const value = item[key]; // Get the value object
-        result[key] = value; // Assign it to the result object
-        return result;
-      },
-      {}
-    );
+    const selectedColumns = result.columns.reduce((result: any, item: any) => {
+      const key = Object.keys(item)[0]; // Get the key from the current object
+      if (!key) {
+        return;
+      }
+      const value = item[key]; // Get the value object
+      result[key] = value; // Assign it to the result object
+      return result;
+    }, {});
 
     const columnsToInsert = result.insertDto.reduce(
       (result: any, item: any) => {
@@ -282,7 +279,7 @@ async function generateComponents() {
     const prefix = /[-_]/.test(tableName) ? tableName.split(/[-_]/)[0] : '';
     const cleanedTableName = tableName.replace(new RegExp(`^${prefix}`), '');
 
-    const { pluralName } = await inquirer.prompt([
+    const { pluralNameInput } = await inquirer.prompt([
       {
         type: 'input',
         name: 'pluralName',
@@ -296,11 +293,21 @@ async function generateComponents() {
       },
     ]);
 
+    const pluralName = inflection.camelize(pluralNameInput);
+
     const pluralNameLowFirst = inflection.camelize(pluralName, true);
+
+    const routeName = inflection.transform(pluralName, [
+      'underscore',
+      'dasherize',
+    ]);
 
     for (const type of ['Controller', 'Service']) {
       const componentDir = path.join(SRC_DIR, type);
-      const componentPath = path.join(componentDir, `${pluralName}${type}.php`);
+      const componentPath = path.join(
+        componentDir,
+        `${inflection.classify(pluralName)}${type}.php`
+      );
       const templatePath = path.join(TEMPLATE_PATH, type, 'base.php');
 
       await fs.mkdir(componentDir, { recursive: true });
@@ -338,12 +345,22 @@ async function generateComponents() {
       const existingRouteContent = await fs.readFile(ROUTES_FILE, 'utf-8');
       const routeContent = await fs.readFile(routeContentPath, 'utf-8');
 
+      const lines = existingRouteContent.split('\n');
+      const returnAppLineIndex = lines.findIndex((line: string | string[]) =>
+        line.includes('return $app;')
+      );
+
+      const beforeReturnApp = lines.slice(0, returnAppLineIndex).join('\n');
+      const afterReturnApp = lines.slice(returnAppLineIndex).join('\n');
+
       const newContent = replaceTemplatePlaceholders(routeContent, {
         pluralNameLowFirst,
         pluralName,
+        routeName,
         primaryKeyColumnName,
       });
-      const updatedContent = existingRouteContent + '\n\n' + newContent;
+      const updatedContent =
+        beforeReturnApp + '\n\n' + newContent + '\n\n' + afterReturnApp;
 
       await fs.writeFile(ROUTES_FILE, updatedContent);
     }
@@ -373,6 +390,7 @@ async function generateComponents() {
       const newContent = replaceTemplatePlaceholders(swaggerContent, {
         pluralNameLowFirst,
         pluralName,
+        routeName,
         primaryKeyColumnName,
         primaryKeyType: JSON.stringify(primaryKeyType),
         selectedColumns,

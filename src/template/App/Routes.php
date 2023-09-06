@@ -1,8 +1,10 @@
 // --------------- {{pluralName}} Routes ---------------- //
-${{pluralNameLowFirst}} = 'App\Controller\{{pluralName}}Controller:';
+$app->group('/{{routeName}}', function ($app) {
+  ${{routeName}} = 'App\Controller\{{pluralName}}Controller:';
 
-$app->get('/{{pluralNameLowFirst}}', "{${{pluralNameLowFirst}}}getAll");
-$app->post('/{{pluralNameLowFirst}}', "{${{pluralNameLowFirst}}}create");
-$app->get('/{{pluralNameLowFirst}}/{{{primaryKeyColumnName}}}', "{${{pluralNameLowFirst}}}getOne");
-$app->put('/{{pluralNameLowFirst}}/{{{primaryKeyColumnName}}}', "{${{pluralNameLowFirst}}}update");
-$app->delete('/{{pluralNameLowFirst}}/{{{primaryKeyColumnName}}}', "{${{pluralNameLowFirst}}}delete");
+  $app->get('', "{${{routeName}}}getAll");
+  $app->post('', "{${{routeName}}}create");
+  $app->get('/{{{primaryKeyColumnName}}}', "{${{routeName}}}getOne");
+  $app->put('/{{{primaryKeyColumnName}}}', "{${{routeName}}}update");
+  $app->delete('/{{{primaryKeyColumnName}}}', "{${{routeName}}}delete");
+})->add($authMiddleware);

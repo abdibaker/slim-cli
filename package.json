@@ -6,6 +6,9 @@
   "version": "0.0.5",
   "description": "",
   "main": ".dist/index.js",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "node copy-template.js && tsc -w",
     "build": "node copy-template.js && tsc",
