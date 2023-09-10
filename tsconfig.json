@@ -4,7 +4,7 @@
   "compilerOptions": {
     "lib": ["es2023"],
     "outDir": "dist",
-    "module": "Node16",
+    "module": "node16",
     "target": "es2022",
     "strict": true,
     "noUncheckedIndexedAccess": true,
@@ -13,6 +13,5 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node16"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/template"]
+  "include": ["src/**/*"]
 }
