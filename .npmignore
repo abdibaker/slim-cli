@@ -3,3 +3,4 @@ node_modules
 src
 bun.lockb
 tsconfig.json
+scripts
