@@ -1,0 +1,66 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Swagger",
+    "version": "1.0.0",
+    "description": "",
+    "contact": {
+      "email": "abdibaker1@gmail.com",
+      "name": "",
+      "url": "http://localhost:8080"
+    }
+  },
+  "servers": [
+    { "url": "http://localhost:8080", "description": "Local server" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Access token is missing or invalid"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/login": {
+      "get": {
+        "tags": ["users"],
+        "operationId": "userLogin",
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": { "schema": { "type": "string" } }
+            }
+          },
+          "400": { "description": "Invalid username/password supplied" }
+        },
+        "parameters": [
+          {
+            "name": "username",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ]
+      }
+    }
+  }
+}

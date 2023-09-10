@@ -5,8 +5,8 @@ program.version('0.0.1');
 
 program
   .command('generate')
-  .alias('gen')
-  .description('Runs an exercise on watch mode')
+  .alias('g')
+  .description('generate api')
   .option('-j, --join', 'generate with join')
   .action((options: { join: boolean }) => console.log(options));
 

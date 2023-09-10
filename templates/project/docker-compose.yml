@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: slim-api-nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - php-fpm
+
+  php-fpm:
+    build: ./docker/php8
+    container_name: slim-api-php
+    volumes:
+      - ./:/var/www/html
