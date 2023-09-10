@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { program } from 'commander';
+import { columnsToInsert } from './db.js';
 
 program.version('0.0.1');
 
@@ -8,6 +9,6 @@ program
   .alias('g')
   .description('generate api')
   .option('-j, --join', 'generate with join')
-  .action((options: { join: boolean }) => console.log(options));
+  .action((options: { join: boolean }) => console.log(columnsToInsert));
 
-program.parse(process.argv)
+program.parse(process.argv);

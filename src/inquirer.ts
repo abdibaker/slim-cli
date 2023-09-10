@@ -11,9 +11,9 @@ async function getTableName() {
     },
   ]);
 
-  const [prefix, cleanedTableName] = tableName.split(/[-_]/);
+  const [prefix, tableNameWithoutPrefix] = tableName.split(/[-_]/);
 
-  if (cleanedTableName) {
+  if (tableNameWithoutPrefix) {
     const { hasPrefix } = await inquirer.prompt([
       {
         type: 'confirm',
@@ -25,11 +25,11 @@ async function getTableName() {
     ]);
 
     if (hasPrefix) {
-      return cleanedTableName;
+      return { tableName, tableNameWithoutPrefix };
     }
   }
 
-  return tableName;
+  return { tableName, tableNameWithoutPrefix: tableName };
 }
 
 async function getClassName(tableName: string) {
@@ -44,7 +44,7 @@ async function getClassName(tableName: string) {
   return className;
 }
 
-const tableName = await getTableName();
-const className = await getClassName(tableName);
+const { tableName, tableNameWithoutPrefix } = await getTableName();
+const className = await getClassName(tableNameWithoutPrefix);
 
 export { tableName, className };

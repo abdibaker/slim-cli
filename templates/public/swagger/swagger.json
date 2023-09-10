@@ -1,0 +1,128 @@
+,
+"/{{routeName}}": {
+  "get": {
+    "tags": ["{{className}}"],
+    "responses": {
+      "200": {
+        "description": "successful operation",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {{selectedColumns}}
+              }
+            }
+          }
+        }
+      },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+    }
+  },
+  "post": {
+    "tags": ["{{className}}"],
+    "requestBody": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {{columnsToInsert}}
+          }
+        }
+      },
+      "required": true
+    },
+    "responses": {
+      "200": {
+        "description": "successful operation",
+        "content": {
+          "application/json": {
+            "schema": { "type": "integer", "example": 1 }
+          }
+        }
+      },
+      "400": { "description": "Invalid status value" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+    }
+  }
+},
+"/{{routeName}}/{{{primaryKeyColumnName}}}": {
+  "get": {
+    "tags": ["{{className}}"],
+    "parameters": [
+      {
+        "name": "{{primaryKeyColumnName}}",
+        "in": "path",
+        "required": true,
+        "schema": {{primaryKeyType}}
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "successful operation",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {{selectedColumns}}
+            }
+          }
+        }
+      },
+      "400": { "description": "Invalid primaryKeyColumnName supplied" },
+      "404": { "description": "Not found" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+    }
+  },
+  "put": {
+    "tags": ["{{className}}"],
+    "parameters": [
+      {
+        "in": "path",
+        "name": "{{primaryKeyColumnName}}",
+        "required": true,
+        "schema": {{primaryKeyType}}
+      }
+    ],
+    "requestBody": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object",
+            "properties": {{columnsToUpdate}}
+          }
+        }
+      },
+      "required": true
+    },
+    "responses": {
+      "200": {
+        "description": "successful operation",
+        "content": {
+          "application/json": {
+            "schema": { "type": "integer", "example": 1 }
+          }
+        }
+      },
+      "404": { "description": "{{className}} not found" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+    }
+  },
+  "delete": {
+    "tags": ["{{className}}"],
+    "parameters": [
+      {
+        "name": "{{primaryKeyColumnName}}",
+        "in": "path",
+        "required": true,
+        "schema": {{primaryKeyType}}
+      }
+    ],
+    "responses": {
+      "200": { "description": "successful operation" },
+      "404": { "description": "School not found" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+    }
+  }
+}
