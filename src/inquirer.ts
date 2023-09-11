@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import inflection from 'inflection';
 
-async function getTableName() {
+export async function getTableName() {
   const { tableName } = await inquirer.prompt([
     {
       type: 'input',
@@ -32,7 +32,7 @@ async function getTableName() {
   return { tableName, tableNameWithoutPrefix: tableName };
 }
 
-async function getClassName(tableName: string) {
+export async function getClassName(tableName: string) {
   const { className } = await inquirer.prompt([
     {
       type: 'input',
@@ -43,8 +43,3 @@ async function getClassName(tableName: string) {
   ]);
   return className;
 }
-
-const { tableName, tableNameWithoutPrefix } = await getTableName();
-const className = await getClassName(tableNameWithoutPrefix);
-
-export { tableName, className };

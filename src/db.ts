@@ -1,7 +1,6 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import getDataType from './helpers/getDataType.js';
-import { tableName } from './inquirer.js';
 
 dotenv.config();
 
@@ -21,7 +20,7 @@ const conn = mysql.createPool({
   database: DB_NAME,
 });
 
-async function fetchPrimaryKey(tableName: string) {
+export async function fetchPrimaryKey(tableName: string) {
   try {
     const [rows] = (await conn.query(
       `SHOW KEYS FROM ${tableName} WHERE Key_name = "PRIMARY"`
@@ -32,7 +31,10 @@ async function fetchPrimaryKey(tableName: string) {
   }
 }
 
-async function fetchPrimaryKeyType(tableName: string, primaryKey: string) {
+export async function fetchPrimaryKeyType(
+  tableName: string,
+  primaryKey: string
+) {
   try {
     const [rows] = (await conn.query(`DESCRIBE ${tableName}`)) as any;
     const primaryKeyRow = rows.find((row: any) => row.Field === primaryKey);
@@ -46,7 +48,7 @@ async function fetchPrimaryKeyType(tableName: string, primaryKey: string) {
   }
 }
 
-async function fetchAllColumns(tableName: string) {
+export async function fetchAllColumns(tableName: string) {
   try {
     const [rows] = (await conn.query(
       `SHOW COLUMNS FROM ${tableName}`
@@ -93,12 +95,3 @@ async function fetchAllColumns(tableName: string) {
     throw error;
   }
 }
-
-export const { primaryKey } = await fetchPrimaryKey(tableName);
-export const primaryKeyType = await fetchPrimaryKeyType(tableName, primaryKey);
-export const {
-  columnsToSelect,
-  selectedColumns,
-  columnsToInsert,
-  columnsToUpdate,
-} = await fetchAllColumns(tableName);

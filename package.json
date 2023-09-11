@@ -9,7 +9,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "link-cli": "bun unlink && chmod +x ./dist/index.js && bun link",
-    "dev": "tsc -w",
+    "dev": "bun scripts/prepare.ts && tsc -w",
     "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --packages=external"
   },
   "keywords": [],
