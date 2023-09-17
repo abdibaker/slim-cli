@@ -4,13 +4,14 @@
     "slim": "./dist/index.js"
   },
   "type": "module",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
     "dev": "bun scripts/prepare.ts && tsc -w",
     "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --external commander --external dotenv --external inquirer --external mysql2 --external chalk-animation --external fs-extra --external nanospinner --external figlet --external gradient-string --minify",
-    "link-cli": "bun unlink && bun run build-prod && chmod +x ./dist/index.js && bun link"
+    "link-cli": "bun unlink && bun run build-prod && chmod +x ./dist/index.js && bun link",
+    "deploy": "bun run build-prod && npm publish --access public"
   },
   "keywords": [],
   "author": "Abdillah Bakari Ali",

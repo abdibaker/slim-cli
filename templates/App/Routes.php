@@ -7,4 +7,4 @@
     $app->get('/{{{primaryKey}}}', "{${{classNameLowFirst}}}getOne");
     $app->put('/{{{primaryKey}}}', "{${{classNameLowFirst}}}update");
     $app->delete('/{{{primaryKey}}}', "{${{classNameLowFirst}}}delete");
-  })->add($authMiddleware);
+  });
