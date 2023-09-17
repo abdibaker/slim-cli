@@ -4,7 +4,7 @@
     "slim": "./dist/index.js"
   },
   "type": "module",
-  "version": "0.1.1",
+  "version": "git0.1-beta.2",
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
