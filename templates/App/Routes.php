@@ -4,7 +4,7 @@
 
     $app->get('', "{${{classNameLowFirst}}}getAll");
     $app->post('', "{${{classNameLowFirst}}}create");
-    $app->get('/{{{primaryKeyColumnName}}}', "{${{classNameLowFirst}}}getOne");
-    $app->put('/{{{primaryKeyColumnName}}}', "{${{classNameLowFirst}}}update");
-    $app->delete('/{{{primaryKeyColumnName}}}', "{${{classNameLowFirst}}}delete");
+    $app->get('/{{{primaryKey}}}', "{${{classNameLowFirst}}}getOne");
+    $app->put('/{{{primaryKey}}}', "{${{classNameLowFirst}}}update");
+    $app->delete('/{{{primaryKey}}}', "{${{classNameLowFirst}}}delete");
   })->add($authMiddleware);

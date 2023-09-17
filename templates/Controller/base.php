@@ -32,7 +32,7 @@ final class {{className}}Controller
   public function getOne(Request $request, Response $response, array $args): Response
   {
     try {
-      $result = $this->{{classNameLowFirst}}Service->getOne(({{primaryKeyType}}) $args['{{primaryKeyColumnName}}']);
+      $result = $this->{{classNameLowFirst}}Service->getOne(({{primaryKeyType}}) $args['{{primaryKey}}']);
       return $response->withJson($result);
     } catch (Exception $e) {
       return $response->withJson(['error' => $e->getMessage()], 404);
@@ -54,7 +54,7 @@ final class {{className}}Controller
   {
     try {
       $input = (object) $request->getParsedBody();
-      $result = $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKeyColumnName}}'], json_decode((string) json_encode($input), true));
+      $result = $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], json_decode((string) json_encode($input), true));
       return $response->withJson($result);
     } catch (Exception $e) {
       return $response->withJson(['error' => $e->getMessage()], 400);
@@ -64,7 +64,7 @@ final class {{className}}Controller
   public function delete(Request $request, Response $response, array $args): Response
   {
     try {
-      $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKeyColumnName}}']);
+      $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKey}}']);
       return $response->withJson($result);
     } catch (Exception $e) {
       return $response->withJson(['error' => $e->getMessage()], 400);

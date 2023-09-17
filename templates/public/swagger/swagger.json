@@ -47,12 +47,12 @@
     }
   }
 },
-"/{{routeName}}/{{{primaryKeyColumnName}}}": {
+"/{{routeName}}/{{{primaryKey}}}": {
   "get": {
     "tags": ["{{className}}"],
     "parameters": [
       {
-        "name": "{{primaryKeyColumnName}}",
+        "name": "{{primaryKey}}",
         "in": "path",
         "required": true,
         "schema": {{primaryKeyType}}
@@ -70,7 +70,7 @@
           }
         }
       },
-      "400": { "description": "Invalid primaryKeyColumnName supplied" },
+      "400": { "description": "Invalid primaryKey supplied" },
       "404": { "description": "Not found" },
       "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }
@@ -80,7 +80,7 @@
     "parameters": [
       {
         "in": "path",
-        "name": "{{primaryKeyColumnName}}",
+        "name": "{{primaryKey}}",
         "required": true,
         "schema": {{primaryKeyType}}
       }
@@ -113,7 +113,7 @@
     "tags": ["{{className}}"],
     "parameters": [
       {
-        "name": "{{primaryKeyColumnName}}",
+        "name": "{{primaryKey}}",
         "in": "path",
         "required": true,
         "schema": {{primaryKeyType}}

@@ -4,12 +4,17 @@ import { fetchAllColumns, fetchPrimaryKey, fetchPrimaryKeyType } from './db.js';
 import { createComponent } from './createComponent.js';
 import { getClassName, getTableName } from './inquirer.js';
 import inflection from 'inflection';
+import { updateRoutesFile } from './updateRoutesFile.js';
+import { updateServicesFile } from './updateServicesFile.js';
+import { updateSwaggerFile } from './updateSwaggerFile.js';
+import { welcome } from './helpers/welcome.js';
+import { cloneGitHubRepository } from './create.js';
+import chalk from 'chalk';
 
 async function generateApi() {
   try {
     const { tableName, tableNameWithoutPrefix } = await getTableName();
     const primaryKey = await fetchPrimaryKey(tableName);
-    console.log("🚀 ~ file: index.ts:12 ~ generateApi ~ primaryKey:", primaryKey)
 
     const primaryKeyType = await fetchPrimaryKeyType(tableName, primaryKey);
     const {
@@ -21,50 +26,56 @@ async function generateApi() {
 
     const className = await getClassName(tableNameWithoutPrefix);
     const classNameLowFirst = inflection.camelize(className, true);
-    const routeName = inflection.transform(className, [
-      'underscore',
-      'dasherize',
-    ]);
+    const kebabCaseClassName = (className: string) => {
+      const words = inflection.dasherize(className).split('_');
+      if (words.length > 1) {
+        words[words.length - 1] = inflection.pluralize(words[-1]!);
+      } else {
+        words[0] = inflection.pluralize(words[0]!);
+      }
+
+      return words.join('-');
+    };
+
+    const routeName = kebabCaseClassName(tableNameWithoutPrefix);
 
     await createComponent('Controller', {
       className,
       tableName,
       primaryKey,
-      primaryKeyType,
+      primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
       classNameLowFirst,
       columnsToSelect,
     });
 
-    // await createComponent(
-    //   'Service',
-    //   className,
-    //   classNameLowFirst,
-    //   routeName,
-    //   primaryKeyColumnName
-    // );
+    await createComponent('Service', {
+      className,
+      primaryKey,
+      columnsToSelect,
+      tableName,
+      primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
+    });
 
-    // await updateRoutesFile(
-    //   classNameLowFirst,
-    //   className,
-    //   routeName,
-    //   primaryKeyColumnName
-    // );
-    // await updateServicesFile(
-    //   classNameLowFirst,
-    //   className,
-    //   primaryKeyColumnName
-    // );
-    // await updateSwaggerFile(
-    //   className,
-    //   routeName,
-    //   primaryKeyColumnName,
-    //   primaryKeyType,
-    //   selectedColumns,
-    //   columnsToInsert,
-    //   columnsToUpdate
-    // );
+    await updateRoutesFile({
+      classNameLowFirst,
+      className,
+      routeName,
+      primaryKey,
+    });
 
-    console.log(`Endpoint "/${routeName}" generated successfully!`);
+    await updateServicesFile({ classNameLowFirst, className, primaryKey });
+
+    await updateSwaggerFile({
+      className,
+      routeName,
+      primaryKey,
+      primaryKeyType,
+      selectedColumns,
+      columnsToInsert,
+      columnsToUpdate,
+    });
+
+    console.log(chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`));
     process.exit(0);
   } catch (error) {
     console.error('An error occurred:', (error as Error).message);
@@ -81,7 +92,10 @@ program
   .option('-j, --join', 'generate with join')
   .action(generateApi);
 
-program.parse(process.argv);
+program
+  .command('create')
+  .alias('c')
+  .description('create a new project')
+  .action(cloneGitHubRepository);
 
-// await createComponent('Controller', className, classNameLowFirst, routeName, primaryKeyColumnName, primaryKeyType, columnsToSelect, updateDto);
-// await createComponent('Service', className, classNameLowFirst, routeName, primaryKeyColumnName);
+program.parse(process.argv);

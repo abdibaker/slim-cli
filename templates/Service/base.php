@@ -18,18 +18,18 @@ final class {{className}}Service
     return $this->conn->fetchAllAssociative(
       'SELECT {{columnsToSelect}}
        FROM {{tableName}}
-       ORDER BY {{primaryKeyColumnName}} ASC'
+       ORDER BY {{primaryKey}} ASC'
     );
   }
 
 
-  public function getOne({{primaryKeyType}} ${{primaryKeyColumnName}}): array
+  public function getOne({{primaryKeyType}} ${{primaryKey}}): array
   {
     $result = $this->conn->fetchAssociative(
       'SELECT {{columnsToSelect}} 
        FROM {{tableName}} 
-       WHERE {{primaryKeyColumnName}} = ?',
-       [${{primaryKeyColumnName}}]
+       WHERE {{primaryKey}} = ?',
+       [${{primaryKey}}]
     );
 
     if (!$result) {
@@ -43,14 +43,14 @@ final class {{className}}Service
     return $this->conn->insert('{{tableName}}', $data);
   }
 
-  public function update({{primaryKeyType}} ${{primaryKeyColumnName}}, $data): int|string
+  public function update({{primaryKeyType}} ${{primaryKey}}, $data): int|string
   {
-    return $this->conn->update('{{tableName}}', $data, ['{{primaryKeyColumnName}}' => ${{primaryKeyColumnName}}]);
+    return $this->conn->update('{{tableName}}', $data, ['{{primaryKey}}' => ${{primaryKey}}]);
   }
 
-  public function delete({{primaryKeyType}} ${{primaryKeyColumnName}}): int|string
+  public function delete({{primaryKeyType}} ${{primaryKey}}): int|string
   {
-    return $this->conn->delete('{{tableName}}', ['{{primaryKeyColumnName}}' => ${{primaryKeyColumnName}}]);
+    return $this->conn->delete('{{tableName}}', ['{{primaryKey}}' => ${{primaryKey}}]);
   }
 
 }

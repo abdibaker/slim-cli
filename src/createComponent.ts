@@ -9,7 +9,7 @@ interface props {
   tableName: string;
   primaryKey: string;
   primaryKeyType: any;
-  classNameLowFirst: string;
+  classNameLowFirst?: string;
   columnsToSelect: string;
 }
 
@@ -36,7 +36,7 @@ export async function createComponent(
     const templateContent = await readFile(templatePath, 'utf-8');
     const replacedContent = replaceTemplatePlaceholders(templateContent, {
       tableName,
-      primaryKeyColumnName: primaryKey,
+      primaryKey: primaryKey,
       primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
       className,
       classNameLowFirst,
@@ -46,11 +46,3 @@ export async function createComponent(
     await writeFile(componentPath, replacedContent);
   }
 }
-
-// className: string,
-// classNameLowFirst: string,
-// routeName: string,
-// primaryKeyColumnName: string,
-// primaryKeyType: { type: string },
-// columnsToSelect: any,
-// updateDto: any

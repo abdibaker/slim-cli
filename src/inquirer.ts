@@ -11,7 +11,7 @@ export async function getTableName() {
     },
   ]);
 
-  const [prefix, tableNameWithoutPrefix] = tableName.split(/[-_]/);
+  const [prefix, tableNameWithoutPrefix, ...rest] = tableName.split(/[-_]/);
 
   if (tableNameWithoutPrefix) {
     const { hasPrefix } = await inquirer.prompt([
@@ -25,7 +25,10 @@ export async function getTableName() {
     ]);
 
     if (hasPrefix) {
-      return { tableName, tableNameWithoutPrefix };
+      return {
+        tableName,
+        tableNameWithoutPrefix: [tableNameWithoutPrefix, ...rest].join('_'),
+      };
     }
   }
 
