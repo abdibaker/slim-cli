@@ -63,12 +63,13 @@ final class {{className}}Controller
 
   public function delete(Request $request, Response $response, array $args): Response
   {
-    try {
-      $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKey}}']);
-      return $response->withJson($result);
-    } catch (Exception $e) {
-      return $response->withJson(['error' => $e->getMessage()], 400);
-    }
+   // try {
+   //   $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKey}}']);
+   //   return $response->withJson($result);
+   // } catch (Exception $e) {
+   //   return $response->withJson(['error' => $e->getMessage()], 400);
+   // }
+   return $response->withJson(['error' => 'Disabled'], 400); // uncomment above code to enable delete
   }
 
 }
