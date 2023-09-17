@@ -13,8 +13,8 @@
     "link-cli": "bun unlink && bun run build-prod && chmod +x ./dist/index.js && bun link"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Abdillah Bakari Ali",
+  "license": "MIT",
   "devDependencies": {
     "@types/chalk-animation": "^1.6.1",
     "@types/figlet": "^1.5.6",

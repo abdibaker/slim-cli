@@ -7,7 +7,6 @@ import inflection from 'inflection';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
 import { updateSwaggerFile } from './updateSwaggerFile.js';
-import { welcome } from './helpers/welcome.js';
 import { cloneGitHubRepository } from './create.js';
 import chalk from 'chalk';
 
@@ -75,12 +74,18 @@ async function generateApi() {
       columnsToUpdate,
     });
 
-    console.log(chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`));
+    console.log(
+      chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`)
+    );
     process.exit(0);
   } catch (error) {
     console.error('An error occurred:', (error as Error).message);
     process.exit(1);
   }
+}
+
+function startProject() {
+  console.log('start project');
 }
 
 program.version('0.0.1');
