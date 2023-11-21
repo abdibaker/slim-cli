@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import getDataType from './helpers/getDataType.js';
+import { excludedFieldsArray } from './CONST.js';
 
 dotenv.config();
 
@@ -54,13 +55,7 @@ export async function fetchAllColumns(tableName: string) {
       `SHOW COLUMNS FROM ${tableName}`
     )) as unknown as [Column[]];
     const columns: Column = {};
-    const excludedFields = [
-      'createdDate',
-      'modifiedDate',
-      'createdBy',
-      'modifiedBy',
-      'deletedDate',
-    ];
+    const excludedFields = excludedFieldsArray;
 
     const primaryKeyIsAutoIncrement = !!rows.find(
       (row: any) => row.Key === 'PRI' && row.Extra === 'auto_increment'

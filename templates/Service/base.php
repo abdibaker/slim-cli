@@ -12,7 +12,6 @@ final class {{className}}Service
   public function __construct(private Connection $conn)
   {
   }
-
   public function getAll(): array
   {
     return $this->conn->fetchAllAssociative(
@@ -37,7 +36,6 @@ final class {{className}}Service
     }
     return $result;
   }
-
   public function create($data): int|string
   {
     return $this->conn->insert('{{tableName}}', $data);
@@ -52,5 +50,4 @@ final class {{className}}Service
   {
     return $this->conn->delete('{{tableName}}', ['{{primaryKey}}' => ${{primaryKey}}]);
   }
-
 }
