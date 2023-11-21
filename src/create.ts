@@ -40,10 +40,10 @@ export function cloneGitHubRepository() {
       chalkAnimation.rainbow('🚀 Installing dependencies...\n');
       fs.copySync(cloneDir, process.cwd());
       fs.removeSync(cloneDir);
-      await installDependencies(); // Wait for installDependencies to complete
+      await installDependencies();
       addEnv();
       console.log(chalk.green('Dependencies installed.'));
-      success(); // Call success after dependencies are installed
+      success();
     } else {
       console.error(chalk.red(`Failed to create Project with code ${code}`));
     }
@@ -60,7 +60,7 @@ async function installDependencies() {
         process.exit(0);
       }
       console.log(chalk.green('Dependencies installed.'));
-      resolve(); // Resolve the promise when dependencies are installed
+      resolve();
     });
   });
 }
@@ -76,7 +76,7 @@ function addEnv() {
 
 async function success() {
   console.clear();
-  const msg = `Project Successfully Created! \n Your REST API journey begins .`;
+  const msg = `Successfully \n Created!.`;
   figlet(msg, (err: any, data: any) => {
     console.log(gradient.pastel.multiline(data));
   });
