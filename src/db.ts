@@ -9,6 +9,8 @@ export interface Column {
   [key: string]: {
     type: string;
     enum?: string[];
+    required?: boolean;
+    exclude?: boolean;
   };
 }
 
@@ -54,22 +56,43 @@ export async function fetchAllColumns(tableName: string) {
     const [rows] = (await conn.query(
       `SHOW COLUMNS FROM ${tableName}`
     )) as unknown as [Column[]];
-    const columns: Column = {};
     const excludedFields = excludedFieldsArray;
 
     const primaryKeyIsAutoIncrement = !!rows.find(
       (row: any) => row.Key === 'PRI' && row.Extra === 'auto_increment'
     );
 
-    rows.forEach((row: any) => {
-      if (!excludedFields.includes(row.Field)) {
-        const dataType = getDataType(row.Type);
-        columns[row.Field] = dataType;
-      }
-    });
+    const columns = rows.reduce((acc, row: any) => {
+      acc[row.Field] = {
+        ...getDataType(row.Type),
+        required: row.Null === 'NO',
+        exclude:
+          row.Extra === 'auto_increment' || row.Extra === 'DEFAULT_GENERATED',
+      };
+      return acc;
+    }, {});
 
-    const columnsToSelect = Object.keys(columns).join(', ');
-    const selectedColumns = JSON.stringify(columns, null, 2);
+    const columnsForSelection = rows.reduce((acc, row: any) => {
+      if (
+        row.Extra !== 'DEFAULT_GENERATED' &&
+        !excludedFields.includes(row.Field)
+      ) {
+        acc[row.Field] = getDataType(row.Type);
+      }
+      return acc;
+    }, {});
+
+    const columnsToSelect = Object.keys(columnsForSelection).join(', ');
+    const selectedColumns = JSON.stringify(columnsForSelection, null, 2);
+    const validationSchema = Object.keys(columns)
+      .map((key, index) => {
+        if (columns[key]?.exclude) return null;
+        return `${index === 0 ? 'v::' : '    '}->key('${key}', v::${
+          columns[key]?.type === 'string' ? 'stringType()' : 'intVal()'
+        })`;
+      })
+      .filter(schema => schema !== null)
+      .join('\n');
     const insertDto = Object.assign({}, columns);
     const updateDto = Object.assign({}, columns);
 
@@ -85,6 +108,7 @@ export async function fetchAllColumns(tableName: string) {
       selectedColumns,
       columnsToInsert: JSON.stringify(insertDto, null, 2),
       columnsToUpdate: JSON.stringify(updateDto, null, 2),
+      validationSchema,
     };
   } catch (error) {
     throw error;

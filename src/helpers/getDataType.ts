@@ -1,22 +1,20 @@
-export default function (type: string) {
-  let dataType;
+export default function getType(type: string) {
   if (type.includes('int')) {
-    dataType = { type: 'integer' };
+    return { type: 'integer' };
   } else if (type.includes('varchar')) {
-    dataType = { type: 'string' };
+    return { type: 'string' };
   } else if (type.startsWith('enum')) {
-    dataType = {
+    return {
       type: 'string',
       enum: type.match(/'([^']+)'/g)?.map(value => value.replace(/'/g, '')),
     };
-  } else if ((type = 'double')) {
-    dataType = {
+  } else if (type === 'double') {
+    return {
       type: 'number',
     };
   } else {
-    dataType = {
+    return {
       type: 'string',
     };
   }
-  return dataType;
 }

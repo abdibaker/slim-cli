@@ -10,7 +10,7 @@ interface props {
   primaryKey: string;
   primaryKeyType: any;
   classNameLowFirst?: string;
-  columnsToSelect: string;
+  columnsToSelect?: string;
 }
 
 export async function createComponent(
