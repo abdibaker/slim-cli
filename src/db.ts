@@ -26,7 +26,7 @@ const conn = mysql.createPool({
 export async function fetchPrimaryKey(tableName: string) {
   try {
     const [rows] = (await conn.query(
-      `SHOW KEYS FROM ${tableName} WHERE Key_name = "PRIMARY"`
+      `SHOW KEYS FROM \`${tableName}\` WHERE Key_name = "PRIMARY"`
     )) as any;
     return rows.length > 0 ? rows[0].Column_name : 'id';
   } catch (error) {
@@ -39,7 +39,7 @@ export async function fetchPrimaryKeyType(
   primaryKey: string
 ) {
   try {
-    const [rows] = (await conn.query(`DESCRIBE ${tableName}`)) as any;
+    const [rows] = (await conn.query(`DESCRIBE \`${tableName}\``)) as any;
     const primaryKeyRow = rows.find((row: any) => row.Field === primaryKey);
     const primaryKeyType = primaryKeyRow
       ? getDataType(primaryKeyRow.Type)
@@ -54,7 +54,7 @@ export async function fetchPrimaryKeyType(
 export async function fetchAllColumns(tableName: string) {
   try {
     const [rows] = (await conn.query(
-      `SHOW COLUMNS FROM ${tableName}`
+      `SHOW COLUMNS FROM \`${tableName}\``
     )) as unknown as [Column[]];
     const excludedFields = excludedFieldsArray;
 
@@ -84,15 +84,17 @@ export async function fetchAllColumns(tableName: string) {
 
     const columnsToSelect = Object.keys(columnsForSelection).join(', ');
     const selectedColumns = JSON.stringify(columnsForSelection, null, 2);
-    const validationSchema = Object.keys(columns)
-      .map((key, index) => {
-        if (columns[key]?.exclude) return null;
-        return `${index === 0 ? 'v::' : '    '}->key('${key}', v::${
-          columns[key]?.type === 'string' ? 'stringType()' : 'intVal()'
-        })`;
-      })
-      .filter(schema => schema !== null)
-      .join('\n');
+    // const validationSchema = Object.keys(columns)
+    //   .map((key, index) => {
+    //     if (columns[key]?.exclude || excludedFields.includes(key)) return null;
+
+    //     return `${index === 0 ? 'v::' : '    '}->key('${key}', v::${
+    //       columns[key]?.type === 'string' ? 'stringType()' : 'intVal()'
+    //     })`;
+    //   })
+    //   .filter(schema => schema !== null)
+    //   .join('\n');
+    const validationSchema = rows
     const insertDto = Object.assign({}, columns);
     const updateDto = Object.assign({}, columns);
 

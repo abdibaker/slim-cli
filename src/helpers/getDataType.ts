@@ -1,20 +1,17 @@
-export default function getType(type: string) {
-  if (type.includes('int')) {
-    return { type: 'integer' };
-  } else if (type.includes('varchar')) {
-    return { type: 'string' };
-  } else if (type.startsWith('enum')) {
-    return {
+type Type = 'int' | 'bigint' | 'varchar' | 'enum' | 'double' | 'decimal';
+
+export default function getTypeInfo(type: Type) {
+  const typeInfo = {
+    int: { type: 'integer' },
+    bigint: { type: 'integer' },
+    varchar: { type: 'string' },
+    enum: {
       type: 'string',
       enum: type.match(/'([^']+)'/g)?.map(value => value.replace(/'/g, '')),
-    };
-  } else if (type === 'double') {
-    return {
-      type: 'number',
-    };
-  } else {
-    return {
-      type: 'string',
-    };
-  }
+    },
+    double: { type: 'number' },
+    decimal: { type: 'number' },
+  };
+
+  return typeInfo[type] || { type: 'string' };
 }
