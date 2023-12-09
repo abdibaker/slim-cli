@@ -72,3 +72,16 @@ export const excludedFields = [
   'userModificationDate',
   'user_modification_date',
 ];
+
+export const updatedAtFieldArray = [
+  'lastModifiedDate',
+  'last_modified_date',
+  'modificationDate',
+  'modification_date',
+  'modifiedAt',
+  'modified_at',
+  'modifiedDate',
+  'modified_date',
+  'updatedAt',
+  'updated_at',
+];

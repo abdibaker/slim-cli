@@ -45,7 +45,8 @@ final class {{className}}Controller
   {
     try {
       $input = $request->getParsedBody();
-      $requiredFields = {{requiredFields}}
+      $requiredFields = [{{requiredFields}}];
+
       $validator = {{validationSchema}};
 
       $dto = [
@@ -89,11 +90,27 @@ final class {{className}}Controller
   {
     try {
       $input = $request->getParsedBody();
+      $validator = {{updateValidationSchema}};
 
-      $result = $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], json_decode((string) json_encode($input), true));
-      return $response->withJson($result);
+      $dtoForValidation = [
+        {{phpUpdateDto}}
+      ];
+
+      $validator->assert($dtoForValidation);
+
+      $dto = array_filter($dtoForValidation, fn($value) => $value !== '');
+
+      $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dto);
+      return $response->withStatus(204);
     } catch (Exception $e) {
-      return $response->withJson(['error' => $e->getMessage()], 400);
+      $duplicateErrorCode = 1062;
+      $foreignErrorCode = 1452;
+
+      if ($e instanceof NestedValidationException) {
+        return $response->withJson(['error' => $e->getMessages()], 400);
+      } else {
+        return $response->withJson(['error' => $e->getMessage()], 500);
+      }
     }
   }
 

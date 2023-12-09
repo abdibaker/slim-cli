@@ -12,7 +12,9 @@ interface props {
   classNameLowFirst?: string;
   columnsToSelect?: string;
   validationSchema?: string;
+  updateValidationSchema?: string;
   phpDto?: string;
+  phpUpdateDto?: string;
   requiredFields?: string;
 }
 
@@ -26,7 +28,9 @@ export async function createComponent(
     classNameLowFirst,
     columnsToSelect,
     validationSchema,
+    updateValidationSchema,
     phpDto,
+    phpUpdateDto,
     requiredFields,
   }: props
 ) {
@@ -48,7 +52,9 @@ export async function createComponent(
       classNameLowFirst,
       columnsToSelect,
       validationSchema,
+      updateValidationSchema,
       phpDto,
+      phpUpdateDto,
       requiredFields,
     });
 

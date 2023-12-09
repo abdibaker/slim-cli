@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import getDataType from './helpers/getDataType.js';
-import { excludedFields } from './CONST.js';
+import { excludedFields, updatedAtFieldArray } from './CONST.js';
 
 dotenv.config();
 
@@ -76,6 +76,11 @@ export async function fetchAllColumns(tableName: string) {
       return acc;
     }, {});
 
+    const updatedAtField = Object.entries(columns).find(
+      ([key, value]) =>
+        updatedAtFieldArray.includes(key) && value.format === 'date-time'
+    )?.[0];
+
     const columnsForSelection = rows.reduce((acc, row: any) => {
       if (
         row.Extra !== 'DEFAULT_GENERATED' &&
@@ -112,6 +117,25 @@ export async function fetchAllColumns(tableName: string) {
       })
       .join('\n');
 
+    const updateValidationSchema = Object.keys(columns)
+      .filter(key => !(columns[key]?.exclude || excludedFields.includes(key)))
+      .map((key, index) => {
+        const typeValidation = columns[key]?.enum
+          ? `v::in([${columns[key]?.enum
+              ?.map(value => `'${value}'`)
+              .join(', ')}])`
+          : columns[key]?.type === 'string'
+          ? 'v::stringType()'
+          : 'v::intVal()';
+
+        const validationRule = `${
+          index === 0 ? 'v::' : '       ->'
+        }key('${key}', ${`v::optional(${typeValidation})`})`;
+
+        return validationRule;
+      })
+      .join('\n');
+
     const filteredColumns = Object.keys(columns)
       .filter(key => !excludedFields.includes(key))
       .reduce((obj, key) => {
@@ -122,9 +146,14 @@ export async function fetchAllColumns(tableName: string) {
 
     const insertDto = Object.assign({}, filteredColumns);
     const updateDto = Object.assign({}, filteredColumns);
-    const requiredFields = Object.keys(filteredColumns).filter(key => filteredColumns[key].required === true);;
-    
+
+    const requiredFields = Object.keys(filteredColumns)
+      .filter(key => filteredColumns[key].required === true)
+      .map(key => `'${key}'`)
+      .join(', ');
+
     const phpDto = transformToPHPDto(insertDto);
+    const phpUpdateDto = transformToPHPUpdateDto(updateDto, updatedAtField);
 
     delete updateDto[await fetchPrimaryKey(tableName)];
     delete insertDto.status;
@@ -138,24 +167,46 @@ export async function fetchAllColumns(tableName: string) {
       selectedColumns,
       columnsToInsert: JSON.stringify(insertDto, null, 2),
       phpDto,
+      phpUpdateDto,
       columnsToUpdate: JSON.stringify(updateDto, null, 2),
       validationSchema,
+      updateValidationSchema,
       requiredFields,
+      updatedAtField,
     };
   } catch (error) {
     throw error;
   }
 }
 
-function transformToPHPDto(input: Column) {
+function transformToPHPDto(input: Column): string {
   return Object.entries(input)
-    .map(
-      ([key, value]) =>
-        `  '${key}' => ${
-          value.format === 'date-time'
-            ? `(new \\DateTime($input['${key}']))->format('Y-m-d H:i:s')`
-            : `$input['${key}']`
-        } ${value?.required ? '' : ' ?? null'},`
-    )
+    .map(([key, value]) => {
+      if (value.format === 'date-time') {
+        return `  '${key}' => $input['${key}'] ? (new \\DateTime($input['${key}']))->format('Y-m-d H:i:s') : ${
+          value?.required ? "date('Y-m-d H:i:s')" : 'null'
+        },`;
+      } else {
+        return `  '${key}' => $input['${key}'],`;
+      }
+    })
     .join('\n');
+}
+
+function transformToPHPUpdateDto(
+  input: Column,
+  updatedAtField: string | undefined
+): string {
+  return (
+    Object.entries(input)
+      .map(([key, value]) => {
+        if (value.format === 'date-time') {
+          return `  '${key}' => $input['${key}'] ? (new \\DateTime($input['${key}']))->format('Y-m-d H:i:s') : ($input['${key}'] ? $input['${key}'] : null),`;
+        } else {
+          return `  '${key}' => $input['${key}'] ?? '',`;
+        }
+      })
+      .join('\n') +
+    (updatedAtField ? `\n  '${updatedAtField}' => date('Y-m-d H:i:s'),` : '')
+  );
 }

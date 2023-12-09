@@ -23,7 +23,9 @@ async function generateApi() {
       columnsToUpdate,
       validationSchema,
       phpDto,
+      phpUpdateDto,
       requiredFields,
+      updateValidationSchema,
     } = await fetchAllColumns(tableName);
 
     const className = await getClassName(tableNameWithoutPrefix);
@@ -49,7 +51,9 @@ async function generateApi() {
       classNameLowFirst,
       validationSchema,
       phpDto,
+      phpUpdateDto,
       requiredFields,
+      updateValidationSchema,
     });
 
     await createComponent('Service', {
