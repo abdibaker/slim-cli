@@ -11,6 +11,9 @@ interface props {
   primaryKeyType: any;
   classNameLowFirst?: string;
   columnsToSelect?: string;
+  validationSchema?: string;
+  phpDto?: string;
+  requiredFields?: string;
 }
 
 export async function createComponent(
@@ -22,6 +25,9 @@ export async function createComponent(
     primaryKeyType,
     classNameLowFirst,
     columnsToSelect,
+    validationSchema,
+    phpDto,
+    requiredFields,
   }: props
 ) {
   const componentDir = path.join(SRC_DIR, type);
@@ -41,6 +47,9 @@ export async function createComponent(
       className,
       classNameLowFirst,
       columnsToSelect,
+      validationSchema,
+      phpDto,
+      requiredFields,
     });
 
     await writeFile(componentPath, replacedContent);

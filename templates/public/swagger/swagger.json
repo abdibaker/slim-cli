@@ -34,16 +34,12 @@
       "required": true
     },
     "responses": {
-      "200": {
-        "description": "successful operation",
-        "content": {
-          "application/json": {
-            "schema": { "type": "integer", "example": 1 }
-          }
-        }
-      },
-      "400": { "description": "Invalid status value" },
-      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+      "201": { "description": "successful created" },
+      "400": { "description": "Validation failed" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" },
+      "409": { "description": "Data already exists" },
+      "404": { "description": "Foreign key Not found" },
+      "500": { "description": "Internal server error" }
     }
   }
 },
@@ -97,16 +93,10 @@
       "required": true
     },
     "responses": {
-      "200": {
-        "description": "successful operation",
-        "content": {
-          "application/json": {
-            "schema": { "type": "integer", "example": 1 }
-          }
-        }
-      },
-      "404": { "description": "{{className}} not found" },
-      "401": { "$ref": "#/components/responses/UnauthorizedError" }
+      "204": { "description": "successful updated" },
+      "400": { "description": "Validation failed" },
+      "401": { "$ref": "#/components/responses/UnauthorizedError" },
+      "500": { "description": "Internal server error" }
     }
   },
   "delete": {
@@ -120,7 +110,7 @@
       }
     ],
     "responses": {
-      "200": { "description": "successful operation" },
+      "204": { "description": "successful operation" },
       "404": { "description": "School not found" },
       "401": { "$ref": "#/components/responses/UnauthorizedError" }
     }

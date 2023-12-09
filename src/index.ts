@@ -22,62 +22,68 @@ async function generateApi() {
       columnsToInsert,
       columnsToUpdate,
       validationSchema,
+      phpDto,
+      requiredFields,
     } = await fetchAllColumns(tableName);
 
-    // const className = await getClassName(tableNameWithoutPrefix);
-    // const classNameLowFirst = inflection.camelize(className, true);
-    // const kebabCaseClassName = (className: string) => {
-    //   const words = inflection.dasherize(className).split('_');
-    //   if (words.length > 1) {
-    //     words[words.length - 1] = inflection.pluralize(words[-1]!);
-    //   } else {
-    //     words[0] = inflection.pluralize(words[0]!);
-    //   }
+    const className = await getClassName(tableNameWithoutPrefix);
+    const classNameLowFirst = inflection.camelize(className, true);
+    const kebabCaseClassName = (className: string) => {
+      const words = inflection.dasherize(className).split('_');
+      if (words.length > 1) {
+        words[words.length - 1] = inflection.pluralize(words[-1]!);
+      } else {
+        words[0] = inflection.pluralize(words[0]!);
+      }
 
-    //   return words.join('-');
-    // };
+      return words.join('-');
+    };
 
-    // const routeName = kebabCaseClassName(tableNameWithoutPrefix);
+    const routeName = kebabCaseClassName(tableNameWithoutPrefix);
 
-    // await createComponent('Controller', {
-    //   className,
-    //   tableName,
-    //   primaryKey,
-    //   primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
-    //   classNameLowFirst,
-    // });
+    await createComponent('Controller', {
+      className,
+      tableName,
+      primaryKey,
+      primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
+      classNameLowFirst,
+      validationSchema,
+      phpDto,
+      requiredFields,
+    });
 
-    // await createComponent('Service', {
-    //   className,
-    //   primaryKey,
-    //   columnsToSelect,
-    //   tableName,
-    //   primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
-    // });
+    await createComponent('Service', {
+      className,
+      primaryKey,
+      columnsToSelect,
+      tableName,
+      primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
+    });
 
-    // await updateRoutesFile({
-    //   classNameLowFirst,
-    //   className,
-    //   routeName,
-    //   primaryKey,
-    // });
+    await updateRoutesFile({
+      classNameLowFirst,
+      className,
+      routeName,
+      primaryKey,
+    });
 
-    // await updateServicesFile({ classNameLowFirst, className, primaryKey });
+    await updateServicesFile({ classNameLowFirst, className, primaryKey });
 
-    // await updateSwaggerFile({
-    //   className,
-    //   routeName,
-    //   primaryKey,
-    //   primaryKeyType,
-    //   selectedColumns,
-    //   columnsToInsert,
-    //   columnsToUpdate,
-    // });
+    await updateSwaggerFile({
+      className,
+      routeName,
+      primaryKey,
+      primaryKeyType,
+      selectedColumns,
+      columnsToInsert,
+      columnsToUpdate,
+    });
 
-    // console.log(
-      // chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`)
-      // );
-      console.log(validationSchema)
+    console.log(
+      chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`)
+    );
+
+    // console.log(columnsToInsert)
     process.exit(0);
   } catch (error) {
     console.error('An error occurred:', (error as Error).message);

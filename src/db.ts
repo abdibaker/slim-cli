@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import getDataType from './helpers/getDataType.js';
-import { excludedFieldsArray } from './CONST.js';
+import { excludedFields } from './CONST.js';
 
 dotenv.config();
 
@@ -9,6 +9,7 @@ export interface Column {
   [key: string]: {
     type: string;
     enum?: string[];
+    format?: string;
     required?: boolean;
     exclude?: boolean;
   };
@@ -56,7 +57,6 @@ export async function fetchAllColumns(tableName: string) {
     const [rows] = (await conn.query(
       `SHOW COLUMNS FROM \`${tableName}\``
     )) as unknown as [Column[]];
-    const excludedFields = excludedFieldsArray;
 
     const primaryKeyIsAutoIncrement = !!rows.find(
       (row: any) => row.Key === 'PRI' && row.Extra === 'auto_increment'
@@ -65,7 +65,11 @@ export async function fetchAllColumns(tableName: string) {
     const columns = rows.reduce((acc, row: any) => {
       acc[row.Field] = {
         ...getDataType(row.Type),
-        required: row.Null === 'NO',
+        enum: row.Type.match(/'([^']+)'/g)?.map((value: string) =>
+          value.replace(/'/g, '')
+        ),
+        format: row.Type.includes('datetime') ? 'date-time' : undefined,
+        required: row.Default === null && row.Null === 'NO',
         exclude:
           row.Extra === 'auto_increment' || row.Extra === 'DEFAULT_GENERATED',
       };
@@ -84,19 +88,43 @@ export async function fetchAllColumns(tableName: string) {
 
     const columnsToSelect = Object.keys(columnsForSelection).join(', ');
     const selectedColumns = JSON.stringify(columnsForSelection, null, 2);
-    // const validationSchema = Object.keys(columns)
-    //   .map((key, index) => {
-    //     if (columns[key]?.exclude || excludedFields.includes(key)) return null;
+    const validationSchema = Object.keys(columns)
+      .filter(key => !(columns[key]?.exclude || excludedFields.includes(key)))
+      .map((key, index) => {
+        const isOptional = columns[key]?.required ? '' : 'v::optional(';
+        const typeValidation = columns[key]?.enum
+          ? `v::in([${columns[key]?.enum
+              ?.map(value => `'${value}'`)
+              .join(', ')}])`
+          : columns[key]?.type === 'string'
+          ? 'v::stringType()'
+          : 'v::intVal()';
 
-    //     return `${index === 0 ? 'v::' : '    '}->key('${key}', v::${
-    //       columns[key]?.type === 'string' ? 'stringType()' : 'intVal()'
-    //     })`;
-    //   })
-    //   .filter(schema => schema !== null)
-    //   .join('\n');
-    const validationSchema = rows
-    const insertDto = Object.assign({}, columns);
-    const updateDto = Object.assign({}, columns);
+        const validationRule = `${
+          index === 0 ? 'v::' : '       ->'
+        }key('${key}', ${
+          isOptional
+            ? `${isOptional}${typeValidation}${isOptional ? ')' : ''}`
+            : `${typeValidation}`
+        })`;
+
+        return validationRule;
+      })
+      .join('\n');
+
+    const filteredColumns = Object.keys(columns)
+      .filter(key => !excludedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = columns[key];
+        delete obj[key].exclude;
+        return obj;
+      }, {} as { [key: string]: any });
+
+    const insertDto = Object.assign({}, filteredColumns);
+    const updateDto = Object.assign({}, filteredColumns);
+    const requiredFields = Object.keys(filteredColumns).filter(key => filteredColumns[key].required === true);;
+    
+    const phpDto = transformToPHPDto(insertDto);
 
     delete updateDto[await fetchPrimaryKey(tableName)];
     delete insertDto.status;
@@ -109,10 +137,25 @@ export async function fetchAllColumns(tableName: string) {
       columnsToSelect,
       selectedColumns,
       columnsToInsert: JSON.stringify(insertDto, null, 2),
+      phpDto,
       columnsToUpdate: JSON.stringify(updateDto, null, 2),
       validationSchema,
+      requiredFields,
     };
   } catch (error) {
     throw error;
   }
+}
+
+function transformToPHPDto(input: Column) {
+  return Object.entries(input)
+    .map(
+      ([key, value]) =>
+        `  '${key}' => ${
+          value.format === 'date-time'
+            ? `(new \\DateTime($input['${key}']))->format('Y-m-d H:i:s')`
+            : `$input['${key}']`
+        } ${value?.required ? '' : ' ?? null'},`
+    )
+    .join('\n');
 }

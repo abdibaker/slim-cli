@@ -10,7 +10,7 @@ export const ROUTES_FILE = path.join(SRC_DIR, 'App', 'Routes.php');
 export const SERVICES_FILE = path.join(SRC_DIR, 'App', 'Services.php');
 export const SWAGGER_FILE = path.join(PUBLIC_DIR, 'swagger', 'swagger.json');
 
-export const excludedFieldsArray = [
+export const excludedFields = [
   'create_at',
   'create_date',
   'createdAt',

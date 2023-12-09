@@ -1,4 +1,11 @@
-type Type = 'int' | 'bigint' | 'varchar' | 'enum' | 'double' | 'decimal';
+type Type =
+  | 'int'
+  | 'bigint'
+  | 'varchar'
+  | 'enum'
+  | 'double'
+  | 'decimal'
+  | 'datetime';
 
 export default function getTypeInfo(type: Type) {
   const typeInfo = {
@@ -11,6 +18,7 @@ export default function getTypeInfo(type: Type) {
     },
     double: { type: 'number' },
     decimal: { type: 'number' },
+    datetime: { type: 'string', format: 'date-time' },
   };
 
   return typeInfo[type] || { type: 'string' };

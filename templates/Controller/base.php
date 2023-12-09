@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Service\{{className}}Service;
 use App\CustomResponse as Response;
+use App\Service\{{className}}Service;
+use Exception;
 use Pimple\Psr11\Container;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Exception;
+use Respect\Validation\Exceptions\NestedValidationException;
+use Respect\Validation\Validator as v;
 
 final class {{className}}Controller
 {
@@ -42,18 +44,52 @@ final class {{className}}Controller
   public function create(Request $request, Response $response, array $args): Response
   {
     try {
-      $input = (object) $request->getParsedBody();
-      $result = $this->{{classNameLowFirst}}Service->create(json_decode((string) json_encode($input), true));
-      return $response->withJson($result);
+      $input = $request->getParsedBody();
+      $requiredFields = {{requiredFields}}
+      $validator = {{validationSchema}};
+
+      $dto = [
+        {{phpDto}}
+      ];
+
+      foreach ($requiredFields as $key) {
+        if ($input[$key] === null) {
+          unset($dto[$key]);
+        }
+      }
+
+      $validator->assert($dto);
+
+     $this->{{classNameLowFirst}}Service->create($dto);
+     return $response->withStatus(201);
     } catch (Exception $e) {
-      return $response->withJson(['error' => $e->getMessage()], 400);
+      $duplicateErrorCode = 1062;
+      $foreignErrorCode = 1452;
+
+      if ($e instanceof NestedValidationException) {
+        return $response->withJson(['error' => $e->getMessages()], 400);
+      } else if ($e->getCode() === $duplicateErrorCode) {
+        return $response->withJson(['error' => 'The data you try to insert already exists'], 409);
+      } else if ($e->getCode() === $foreignErrorCode) {
+        $matches = [];
+        preg_match("/FOREIGN KEY \(`(\w+)`\) REFERENCES `(\w+)` \(`(\w+)`\)/", $e->getMessage(), $matches);
+        if (count($matches) >= 4) {
+          $childColumnName = $matches[1];
+          $parentTableName = $matches[2];
+          $parentColumnName = $matches[3];
+        }
+        return $response->withJson(['error' => "The '{$childColumnName}' does not exist in the '{$parentTableName} table' column' '{$parentColumnName}'."], 404);
+      } else {
+        return $response->withJson(['error' => $e->getMessage()], 400);
+      }
     }
   }
 
   public function update(Request $request, Response $response, array $args): Response
   {
     try {
-      $input = (object) $request->getParsedBody();
+      $input = $request->getParsedBody();
+
       $result = $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], json_decode((string) json_encode($input), true));
       return $response->withJson($result);
     } catch (Exception $e) {
