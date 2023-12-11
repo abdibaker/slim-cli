@@ -1,14 +1,14 @@
 #!/usr/bin/env node
+import chalk from 'chalk';
 import { program } from 'commander';
-import { fetchAllColumns, fetchPrimaryKey, fetchPrimaryKeyType } from './db.js';
-import { createComponent } from './createComponent.js';
-import { getClassName, getTableName } from './inquirer.js';
 import inflection from 'inflection';
+import { cloneGitHubRepository } from './create.js';
+import { createComponent } from './createComponent.js';
+import { fetchAllColumns, fetchPrimaryKey, fetchPrimaryKeyType } from './db.js';
+import { getClassName, getTableName } from './inquirer.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
 import { updateSwaggerFile } from './updateSwaggerFile.js';
-import { cloneGitHubRepository } from './create.js';
-import chalk from 'chalk';
 
 async function generateApi() {
   try {
