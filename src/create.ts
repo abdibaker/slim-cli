@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { exec } from 'child_process';
-import fs from 'fs-extra';
-import path from 'path';
 import chalk from 'chalk';
 import chalkAnimation from 'chalk-animation';
-import { createSpinner, Options } from 'nanospinner';
+import { exec } from 'child_process';
 import figlet from 'figlet';
+import fs from 'fs-extra';
 import gradient from 'gradient-string';
+import { createSpinner } from 'nanospinner';
+import path from 'path';
 
 export function cloneGitHubRepository() {
   const repoUrl = 'https://github.com/abdibaker/slim-template.git';
@@ -70,7 +70,7 @@ function addEnv() {
   const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
   fs.writeFileSync('.env', envExampleContent);
 
-  fs.removeSync(envExamplePath);
+  // fs.removeSync(envExamplePath);
   fs.removeSync(path.join(process.cwd(), '.git'));
 }
 
