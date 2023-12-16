@@ -15,9 +15,9 @@ export interface Column {
   };
 }
 
-const { DB_HOST, DB_USER, DB_PASS, DB_NAME } = process.env;
+export const { DB_HOST, DB_USER, DB_PASS, DB_NAME } = process.env;
 
-const conn = mysql.createPool({
+export const conn = mysql.createPool({
   host: DB_HOST,
   user: DB_USER,
   password: DB_PASS,
@@ -141,6 +141,7 @@ export async function fetchAllColumns(tableName: string) {
       .reduce((obj, key) => {
         obj[key] = columns[key];
         delete obj[key].exclude;
+        delete obj[key].required;
         return obj;
       }, {} as { [key: string]: any });
 

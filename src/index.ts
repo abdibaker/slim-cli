@@ -9,6 +9,8 @@ import { getClassName, getTableName } from './inquirer.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
 import { updateSwaggerFile } from './updateSwaggerFile.js';
+import { generateDtoSchema } from './generateDtoSchema.js';
+import { generateSwagger } from './swaggerGenerator.js';
 
 async function generateApi() {
   try {
@@ -109,5 +111,11 @@ program
   .alias('c')
   .description('create a new project')
   .action(cloneGitHubRepository);
+
+program
+  .command('swagger')
+  .alias('sw')
+  .description('generate swagger')
+  .action(generateSwagger);
 
 program.parse(process.argv);

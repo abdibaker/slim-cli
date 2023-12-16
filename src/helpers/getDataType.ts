@@ -1,25 +1,48 @@
-type Type =
-  | 'int'
-  | 'bigint'
+export type MysqlType =
   | 'varchar'
-  | 'enum'
-  | 'double'
+  | 'char'
+  | 'text'
+  | 'int'
+  | 'integer'
+  | 'smallint'
+  | 'bigint'
+  | 'bigint'
   | 'decimal'
-  | 'datetime';
+  | 'float'
+  | 'double'
+  | 'date'
+  | 'datetime'
+  | 'timestamp'
+  | 'boolean'
+  | 'bool';
 
-export default function getTypeInfo(type: Type) {
+export default function getTypeInfo(
+  mysqlType: MysqlType,
+  COLUMN_TYPE: string = ''
+) {
   const typeInfo = {
-    int: { type: 'integer' },
-    bigint: { type: 'integer' },
     varchar: { type: 'string' },
+    char: { type: 'string' },
+    text: { type: 'string' },
+    int: { type: 'integer' },
+    integer: { type: 'integer' },
+    smallint: { type: 'integer' },
+    bigint: { type: 'integer' },
+    decimal: { type: 'number' },
+    float: { type: 'number' },
+    double: { type: 'number' },
+    date: { type: 'string', format: 'date' },
+    datetime: { type: 'string', format: 'date-time' },
+    timestamp: { type: 'string', format: 'date-time' },
+    boolean: { type: 'boolean' },
+    bool: { type: 'boolean' },
     enum: {
       type: 'string',
-      enum: type.match(/'([^']+)'/g)?.map(value => value.replace(/'/g, '')),
+      enum: COLUMN_TYPE?.match(/'([^']+)'/g)?.map(value =>
+        value.replace(/'/g, '')
+      ),
     },
-    double: { type: 'number' },
-    decimal: { type: 'number' },
-    datetime: { type: 'string', format: 'date-time' },
   };
 
-  return typeInfo[type] || { type: 'string' };
+  return typeInfo[mysqlType] || { type: 'string' };
 }
