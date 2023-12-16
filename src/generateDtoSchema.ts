@@ -45,8 +45,11 @@ function extractColumnsFromCode(code: string, functionName: string): string[] {
       .replace(/\]/g, '')
       .split(',')
       .forEach(v => {
-        const key = v.replace(/\[/g, '')?.split('>')[0]?.trim();
-        key && columns.push(key);
+        const row = v.replace(/\[/g, '')?.split('>');
+        if (!(row[1]?.trim().startsWith("'") || row[1]?.trim().startsWith('"')))
+          return;
+        const key = row[0]?.trim();
+        if (key) columns.push(key);
       });
   }
 
