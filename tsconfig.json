@@ -13,6 +13,6 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node16"
   },
-  "include": ["src/**/*", "src/templates"],
+  "include": ["src/**/*", "src/templates", "src/index.ts"],
   "exclude": ["node_modules", "dist", "project"]
 }
