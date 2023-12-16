@@ -35,6 +35,18 @@ slim generate or slim g
 
 You can also use the `-j` or `--join` option to generate API with join operations if your database schema includes relationships between tables.
 
+
+### Generating Swagger Documentation
+
+To generate Swagger documentation dynamically, use the following command:
+
+```bash
+slim swagger or slim sw
+```
+
+This command will generate a Swagger file that documents your API endpoints, making it easier for other developers to understand and use your API.
+
+
 ### Starting the Server
 
 To start the server, use the following command:
