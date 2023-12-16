@@ -106,14 +106,14 @@ const swagger: SwaggerSchema = {
   paths: {},
 };
 
-const routeContent: string = readFileContent(ROUTES_FILE);
-
-const routePattern: RegExp =
-  /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\);)/g;
-
-const matches: RegExpMatchArray | null = routeContent.match(routePattern);
-
 export async function generateSwagger() {
+  const routeContent: string = readFileContent(ROUTES_FILE);
+
+  const routePattern: RegExp =
+    /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\);)/g;
+
+  const matches: RegExpMatchArray | null = routeContent.match(routePattern);
+  
   try {
     if (matches) {
       const routeProcessing = matches.map(async route => {
@@ -148,7 +148,8 @@ export async function generateSwagger() {
         const controller = controllerMatch
           ? controllerMatch[1]
               ?.replace(':', '')
-              .replace('App\\Controller\\', '').concat('.php')
+              .replace('App\\Controller\\', '')
+              .concat('.php')
           : '';
 
         const service = controller?.replace('Controller', 'Service');
