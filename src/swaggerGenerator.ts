@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
+import { ROUTES_FILE } from './CONST.js';
 import { generateDtoSchema } from './generateDtoSchema.js';
 
 interface SwaggerPathParameters {
@@ -70,10 +71,6 @@ function readFileContent(filePath: string): string {
   return readFileSync(filePath, 'utf8');
 }
 
-const ROUTE_PATH: string = 'src/App/Routes.php';
-const CONTROLLER_PATH: string = 'src/Controller';
-const SERVICE_PATH: string = 'src/Service';
-
 const swagger: SwaggerSchema = {
   openapi: '3.0.3',
   info: {
@@ -109,7 +106,7 @@ const swagger: SwaggerSchema = {
   paths: {},
 };
 
-const routeContent: string = readFileContent(ROUTE_PATH);
+const routeContent: string = readFileContent(ROUTES_FILE);
 
 const routePattern: RegExp =
   /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\);)/g;
@@ -151,7 +148,7 @@ export async function generateSwagger() {
         const controller = controllerMatch
           ? controllerMatch[1]
               ?.replace(':', '')
-              .replace('App\\Controller\\', '')
+              .replace('App\\Controller\\', '').concat('.php')
           : '';
 
         const service = controller?.replace('Controller', 'Service');
@@ -213,7 +210,7 @@ export async function generateSwagger() {
           };
         } else {
           const requestBodySchema = await generateDtoSchema(
-            'ProfileController.php',
+            controller!,
             routeObj.action!
           );
           const requestBody = {
