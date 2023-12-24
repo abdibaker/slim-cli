@@ -92,15 +92,15 @@ final class {{className}}Controller
       $input = $request->getParsedBody();
       $validator = {{updateValidationSchema}};
 
-      $dtoForValidation = [
+      $dto = [
         {{phpUpdateDto}}
       ];
 
-      $validator->assert($dtoForValidation);
+      $validator->assert($dto);
 
-      $dto = array_filter($dtoForValidation, fn($value) => $value !== '');
+      $dtoForValidation = array_filter($dto, fn($value) => $value !== '');
 
-      $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dto);
+      $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dtoForValidation);
       return $response->withStatus(204);
     } catch (Exception $e) {
       $duplicateErrorCode = 1062;
