@@ -2,37 +2,41 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import inflection from 'inflection';
 
-export async function getTableName() {
-  const { tableName } = await inquirer.prompt([
-    {
-      type: 'input',
-      name: 'tableName',
-      message: 'Enter the name of the Table:',
-    },
-  ]);
+export async function getTableName(tableNameArg: string | undefined) {
+  const tableName =
+    tableNameArg ||
+    (await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'tableName',
+        message: 'Enter the name of the Table:',
+      },
+    ]));
 
-  const [prefix, tableNameWithoutPrefix, ...rest] = tableName.split(/[-_]/);
+  const parts = tableName.split(/[-_]/);
+  const [potentialPrefix, ...rest] = parts;
 
-  if (tableNameWithoutPrefix) {
-    const { hasPrefix } = await inquirer.prompt([
+  if (rest.length > 0) {
+    const hasPrefix = await inquirer.prompt([
       {
         type: 'confirm',
         name: 'hasPrefix',
         message: `Is ${chalk.hex('#f97316')(
-          prefix
-        )} the prefix of table ${chalk.hex('#f97316')(tableName)} ?`,
+          potentialPrefix
+        )} the prefix of table ${chalk.hex('#f97316')(tableName)}?`,
       },
     ]);
 
     if (hasPrefix) {
       return {
         tableName,
-        tableNameWithoutPrefix: [tableNameWithoutPrefix, ...rest].join('_'),
+        tableNameWithoutPrefix: rest.join('_'),
+        hasPrefix: true,
       };
     }
   }
 
-  return { tableName, tableNameWithoutPrefix: tableName };
+  return { tableName, tableNameWithoutPrefix: tableName, hasPrefix: false };
 }
 
 export async function getClassName(tableName: string) {

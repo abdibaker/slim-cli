@@ -6,15 +6,16 @@ import { cloneGitHubRepository } from './create.js';
 import { createComponent } from './createComponent.js';
 import { fetchAllColumns, fetchPrimaryKey, fetchPrimaryKeyType } from './db.js';
 import { getClassName, getTableName } from './inquirer.js';
+import { generateSwagger } from './swaggerGenerator.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
 import { updateSwaggerFile } from './updateSwaggerFile.js';
-import { generateDtoSchema } from './generateDtoSchema.js';
-import { generateSwagger } from './swaggerGenerator.js';
 
-async function generateApi() {
+async function generateApi(tableNameArq: string | undefined) {
   try {
-    const { tableName, tableNameWithoutPrefix } = await getTableName();
+    const { tableName, tableNameWithoutPrefix, hasPrefix } = await getTableName(
+      tableNameArq
+    );
     const primaryKey = await fetchPrimaryKey(tableName);
 
     const primaryKeyType = await fetchPrimaryKeyType(tableName, primaryKey);
@@ -30,7 +31,10 @@ async function generateApi() {
       updateValidationSchema,
     } = await fetchAllColumns(tableName);
 
-    const className = await getClassName(tableNameWithoutPrefix);
+    const className = !hasPrefix
+      ? `${inflection.classify(tableName)}`
+      : await getClassName(tableNameWithoutPrefix);
+
     const classNameLowFirst = inflection.camelize(className, true);
     const kebabCaseClassName = (className: string) => {
       const words = inflection.dasherize(className).split('_');
@@ -100,11 +104,11 @@ async function generateApi() {
 program.version('0.0.1');
 
 program
-  .command('generate')
+  .command('generate [tableName]')
   .alias('g')
   .description('generate api')
   .option('-j, --join', 'generate with join')
-  .action(generateApi);
+  .action(tableName => generateApi(tableName));
 
 program
   .command('create')

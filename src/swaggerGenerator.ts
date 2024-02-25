@@ -156,6 +156,7 @@ export async function generateSwagger() {
 
         let parameters: SwaggerPathParameters[] = [];
         const matches: RegExpMatchArray | null = path.match(/{[^}]+}/g);
+        
         if (matches) {
           parameters = matches.map(match => ({
             name: match.substring(1, match.length - 1),
