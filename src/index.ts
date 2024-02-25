@@ -114,7 +114,8 @@ program
   .command('create')
   .alias('c')
   .description('create a new project')
-  .action(cloneGitHubRepository);
+  .argument('<projectName>', 'project name')
+  .action(projectName => cloneGitHubRepository(projectName));
 
 program
   .command('swagger')

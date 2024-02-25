@@ -9,12 +9,10 @@ import gradient from 'gradient-string';
 import { createSpinner } from 'nanospinner';
 import path from 'path';
 
-export function cloneGitHubRepository() {
+export function cloneGitHubRepository(projectName: string) {
   const repoUrl = 'https://github.com/abdibaker/slim-template.git';
 
-  const cloneDir = 'creating'; // Temporary directory to clone into
-
-  const child = exec(`git clone ${repoUrl} ${cloneDir}`);
+  const child = exec(`git clone ${repoUrl} ${projectName}`);
 
   const spinner = createSpinner('Creating project...\n');
 
@@ -38,8 +36,7 @@ export function cloneGitHubRepository() {
     if (code === 0) {
       spinner.stop();
       chalkAnimation.rainbow('🚀 Installing dependencies...\n');
-      fs.copySync(cloneDir, process.cwd());
-      fs.removeSync(cloneDir);
+      fs.copySync(projectName, process.cwd());
       await installDependencies();
       addEnv();
       console.log(chalk.green('Dependencies installed.'));
