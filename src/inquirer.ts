@@ -5,15 +5,18 @@ import inflection from 'inflection';
 export async function getTableName(tableNameArg: string | undefined) {
   const tableName =
     tableNameArg ||
-    (await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'tableName',
-        message: 'Enter the name of the Table:',
-      },
-    ]));
+    (
+      await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'tableName',
+          message: 'Enter the name of the Table:',
+        },
+      ])
+    ).tableName;
 
   const parts = tableName.split(/[-_]/);
+
   const [potentialPrefix, ...rest] = parts;
 
   if (rest.length > 0) {

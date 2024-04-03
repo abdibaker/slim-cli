@@ -36,9 +36,8 @@ export function cloneGitHubRepository(projectName: string) {
     if (code === 0) {
       spinner.stop();
       chalkAnimation.rainbow('🚀 Installing dependencies...\n');
-      fs.copySync(projectName, process.cwd());
-      await installDependencies();
-      addEnv();
+      await installDependencies(projectName);
+      addEnv(projectName);
       console.log(chalk.green('Dependencies installed.'));
       success();
     } else {
@@ -47,28 +46,36 @@ export function cloneGitHubRepository(projectName: string) {
   });
 }
 
-async function installDependencies() {
-  return new Promise<void>(resolve => {
-    exec('composer install', async (error, stdout, stderr) => {
-      if (error) {
-        console.error(
-          chalk.red(`Error running composer install: ${error.message}`)
-        );
-        process.exit(0);
+async function installDependencies(projectName: string) {
+  return new Promise<void>((resolve, reject) => {
+    exec(
+      `cd ${projectName} && composer install && npm install`,
+      (error, stdout, stderr) => {
+        if (error) {
+          console.error(
+            chalk.red(
+              `Error running dependencies installation: ${error.message}`
+            )
+          );
+          process.exit(1);
+        }
+        console.log(chalk.green('Dependencies installed.'));
+        resolve();
       }
-      console.log(chalk.green('Dependencies installed.'));
-      resolve();
-    });
+    );
   });
 }
 
-function addEnv() {
-  const envExamplePath = path.join(process.cwd(), '.env.example');
+function addEnv(projectName: string) {
+  const envExamplePath = path.join(
+    process.cwd(),
+    `${projectName}/.env.example`
+  );
   const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
-  fs.writeFileSync('.env', envExampleContent);
+  fs.writeFileSync(`${projectName}/.env`, envExampleContent);
 
   // fs.removeSync(envExamplePath);
-  fs.removeSync(path.join(process.cwd(), '.git'));
+  fs.removeSync(path.join(process.cwd(), `${projectName}/.git`));
 }
 
 async function success() {

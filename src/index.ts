@@ -16,6 +16,7 @@ async function generateApi(tableNameArq: string | undefined) {
     const { tableName, tableNameWithoutPrefix, hasPrefix } = await getTableName(
       tableNameArq
     );
+    
     const primaryKey = await fetchPrimaryKey(tableName);
 
     const primaryKeyType = await fetchPrimaryKeyType(tableName, primaryKey);
