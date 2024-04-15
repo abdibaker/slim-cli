@@ -92,71 +92,26 @@ export async function fetchAllColumns(tableName: string) {
     }, {});
 
     const columnsToSelect = Object.keys(columnsForSelection).join(', ');
-    const selectedColumns = JSON.stringify(columnsForSelection, null, 2);
-    const validationSchema = Object.keys(columns)
-      .filter(key => !(columns[key]?.exclude || excludedFields.includes(key)))
-      .map((key, index) => {
-        const isOptional = columns[key]?.required ? '' : 'v::optional(';
-        const typeValidation = columns[key]?.enum
-          ? `v::in([${columns[key]?.enum
-              ?.map(value => `'${value}'`)
-              .join(', ')}])`
-          : columns[key]?.type === 'string'
-          ? 'v::stringType()'
-          : 'v::intVal()';
-
-        const validationRule = `${
-          index === 0 ? 'v::' : '       ->'
-        }key('${key}', ${
-          isOptional
-            ? `${isOptional}${typeValidation}${isOptional ? ')' : ''}`
-            : `${typeValidation}`
-        })`;
-
-        return validationRule;
-      })
-      .join('\n');
-
-    const updateValidationSchema = Object.keys(columns)
-      .filter(key => !(columns[key]?.exclude || excludedFields.includes(key)))
-      .map((key, index) => {
-        const typeValidation = columns[key]?.enum
-          ? `v::in([${columns[key]?.enum
-              ?.map(value => `'${value}'`)
-              .join(', ')}])`
-          : columns[key]?.type === 'string'
-          ? 'v::stringType()'
-          : 'v::intVal()';
-
-        const validationRule = `${
-          index === 0 ? 'v::' : '       ->'
-        }key('${key}', ${`v::optional(${typeValidation})`})`;
-
-        return validationRule;
-      })
-      .join('\n');
 
     const filteredColumns = Object.keys(columns)
       .filter(key => !excludedFields.includes(key))
       .reduce((obj, key) => {
         obj[key] = columns[key];
         delete obj[key].exclude;
-        delete obj[key].required;
         return obj;
       }, {} as { [key: string]: any });
 
     const insertDto = Object.assign({}, filteredColumns);
     const updateDto = Object.assign({}, filteredColumns);
 
-    const requiredFields = Object.keys(filteredColumns)
-      .filter(key => filteredColumns[key].required === true)
-      .map(key => `'${key}'`)
-      .join(', ');
+    if ((await fetchPrimaryKey(tableName)) && primaryKeyIsAutoIncrement) {
+      delete insertDto[await fetchPrimaryKey(tableName)];
+    }
+    delete updateDto[await fetchPrimaryKey(tableName)];
 
     const phpDto = transformToPHPDto(insertDto);
     const phpUpdateDto = transformToPHPUpdateDto(updateDto, updatedAtField);
 
-    delete updateDto[await fetchPrimaryKey(tableName)];
     delete insertDto.status;
 
     if (primaryKeyIsAutoIncrement) {
@@ -165,14 +120,8 @@ export async function fetchAllColumns(tableName: string) {
 
     return {
       columnsToSelect,
-      selectedColumns,
-      columnsToInsert: JSON.stringify(insertDto, null, 2),
       phpDto,
       phpUpdateDto,
-      columnsToUpdate: JSON.stringify(updateDto, null, 2),
-      validationSchema,
-      updateValidationSchema,
-      requiredFields,
       updatedAtField,
     };
   } catch (error) {
@@ -188,7 +137,9 @@ function transformToPHPDto(input: Column): string {
           value?.required ? "date('Y-m-d H:i:s')" : 'null'
         },`;
       } else {
-        return `  '${key}' => $input['${key}'],`;
+        return `  '${key}' => $input['${key}'] ${
+          value.required ? '' : '?: null'
+        },`;
       }
     })
     .join('\n');
@@ -204,7 +155,7 @@ function transformToPHPUpdateDto(
         if (value.format === 'date-time') {
           return `  '${key}' => $input['${key}'] ? (new \\DateTime($input['${key}']))->format('Y-m-d H:i:s') : ($input['${key}'] ? $input['${key}'] : null),`;
         } else {
-          return `  '${key}' => $input['${key}'] ?? '',`;
+          return `  '${key}' => $input['${key}'] ?: null,`;
         }
       })
       .join('\n') +

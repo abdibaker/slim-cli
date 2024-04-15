@@ -27,6 +27,7 @@ export default function getTypeInfo(
     int: { type: 'integer' },
     integer: { type: 'integer' },
     smallint: { type: 'integer' },
+    tinyint: { type: 'integer' },
     bigint: { type: 'integer' },
     decimal: { type: 'number' },
     float: { type: 'number' },

@@ -35,7 +35,6 @@ interface SwaggerPathResponses {
 interface SwaggerPathMethods {
   [methodName: string]: {
     tags: string[];
-    summary?: string;
     parameters: SwaggerPathParameters[];
     requestBody?: any;
     responses: SwaggerPathResponses;
@@ -187,7 +186,6 @@ export async function generateSwagger() {
         if (routeObj.method === 'get') {
           swagger.paths[routeObj.path]![routeObj.method] = {
             tags: [routeObj.tag],
-            summary: routeObj.action,
             parameters: parameters,
             responses: {
               200: {
@@ -225,7 +223,6 @@ export async function generateSwagger() {
 
           swagger.paths[routeObj.path]![routeObj.method] = {
             tags: [routeObj.tag],
-            summary: routeObj.action,
             parameters: parameters,
             requestBody:
               routeObj.method === 'post' || routeObj.method === 'put'

@@ -10,9 +10,6 @@ use App\Service\{{className}}Service;
 use Exception;
 use Pimple\Psr11\Container;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Respect\Validation\Exceptions\NestedValidationException;
-use Respect\Validation\Validator as v;
-
 
 final class {{className}}Controller
 {
@@ -47,21 +44,16 @@ final class {{className}}Controller
   {
     try {
       $input = $request->getParsedBody();
-      $requiredFields = [{{requiredFields}}];
-
-      $validator = {{validationSchema}};
 
       $dto = [
         {{phpDto}}
       ];
 
-      foreach ($requiredFields as $key) {
-        if ($input[$key] === null) {
-          unset($dto[$key]);
+      foreach ($dto as $key => $value) {
+        if ($value === null) {
+            unset($dto[$key]);
         }
       }
-
-      $validator->assert($dto);
 
      $this->{{classNameLowFirst}}Service->create($dto);
      return $response->withStatus(201);
@@ -69,9 +61,7 @@ final class {{className}}Controller
       $duplicateErrorCode = 1062;
       $foreignErrorCode = 1452;
 
-      if ($e instanceof NestedValidationException) {
-        return $response->withJson(['error' => $e->getMessages()], 400);
-      } else if ($e->getCode() === $duplicateErrorCode) {
+      if ($e->getCode() === $duplicateErrorCode) {
         return $response->withJson(['error' => 'The data you try to insert already exists'], 409);
       } else if ($e->getCode() === $foreignErrorCode) {
        $error = Helper::getForeignKeyErrorMessage($e->getMessage());
@@ -86,27 +76,24 @@ final class {{className}}Controller
   {
     try {
       $input = $request->getParsedBody();
-      $validator = {{updateValidationSchema}};
 
       $dto = [
         {{phpUpdateDto}}
       ];
 
-      $validator->assert($dto);
+      foreach ($dto as $key => $value) {
+        if ($value === null) {
+            unset($dto[$key]);
+        }
+      }
 
-      $dtoForValidation = array_filter($dto, fn($value) => $value !== '');
-
-      $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dtoForValidation);
+      $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dto);
       return $response->withStatus(204);
     } catch (Exception $e) {
       $duplicateErrorCode = 1062;
       $foreignErrorCode = 1452;
 
-      if ($e instanceof NestedValidationException) {
-        return $response->withJson(['error' => $e->getMessages()], 400);
-      } else {
-        return $response->withJson(['error' => $e->getMessage()], 500);
-      }
+      return $response->withJson(['error' => $e->getMessage()], 500);
     }
   }
 

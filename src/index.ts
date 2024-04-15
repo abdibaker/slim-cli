@@ -9,44 +9,32 @@ import { getClassName, getTableName } from './inquirer.js';
 import { generateSwagger } from './swaggerGenerator.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
-import { updateSwaggerFile } from './updateSwaggerFile.js';
 
 async function generateApi(tableNameArq: string | undefined) {
   try {
     const { tableName, tableNameWithoutPrefix, hasPrefix } = await getTableName(
       tableNameArq
     );
-    
+
     const primaryKey = await fetchPrimaryKey(tableName);
 
     const primaryKeyType = await fetchPrimaryKeyType(tableName, primaryKey);
-    const {
-      columnsToSelect,
-      selectedColumns,
-      columnsToInsert,
-      columnsToUpdate,
-      validationSchema,
-      phpDto,
-      phpUpdateDto,
-      requiredFields,
-      updateValidationSchema,
-    } = await fetchAllColumns(tableName);
+    const { columnsToSelect, phpDto, phpUpdateDto } = await fetchAllColumns(
+      tableName
+    );
 
     const className = !hasPrefix
       ? `${inflection.classify(tableName)}`
       : await getClassName(tableNameWithoutPrefix);
 
     const classNameLowFirst = inflection.camelize(className, true);
-    const kebabCaseClassName = (className: string) => {
-      const words = inflection.dasherize(className).split('_');
-      if (words.length > 1) {
-        words[words.length - 1] = inflection.pluralize(words[-1]!);
-      } else {
-        words[0] = inflection.pluralize(words[0]!);
-      }
 
-      return words.join('-');
-    };
+    function kebabCaseClassName(className: string) {
+      const words = inflection.dasherize(className).split('_');
+      const lastIndex = words.length - 1;
+      words[lastIndex] = inflection.pluralize(words[lastIndex]!);
+      return words.join('-').toLowerCase();
+    }
 
     const routeName = kebabCaseClassName(tableNameWithoutPrefix);
 
@@ -56,11 +44,8 @@ async function generateApi(tableNameArq: string | undefined) {
       primaryKey,
       primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
       classNameLowFirst,
-      validationSchema,
       phpDto,
       phpUpdateDto,
-      requiredFields,
-      updateValidationSchema,
     });
 
     await createComponent('Service', {
@@ -80,21 +65,12 @@ async function generateApi(tableNameArq: string | undefined) {
 
     await updateServicesFile({ classNameLowFirst, className, primaryKey });
 
-    await updateSwaggerFile({
-      className,
-      routeName,
-      primaryKey,
-      primaryKeyType,
-      selectedColumns,
-      columnsToInsert,
-      columnsToUpdate,
-    });
-
     console.log(
       chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`)
     );
 
-    // console.log(columnsToInsert)
+    await generateSwagger();
+
     process.exit(0);
   } catch (error) {
     console.error('An error occurred:', (error as Error).message);
