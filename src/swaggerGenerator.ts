@@ -112,7 +112,7 @@ export async function generateSwagger() {
     /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\);)/g;
 
   const matches: RegExpMatchArray | null = routeContent.match(routePattern);
-  
+
   try {
     if (matches) {
       const routeProcessing = matches.map(async route => {
@@ -155,7 +155,7 @@ export async function generateSwagger() {
 
         let parameters: SwaggerPathParameters[] = [];
         const matches: RegExpMatchArray | null = path.match(/{[^}]+}/g);
-        
+
         if (matches) {
           parameters = matches.map(match => ({
             name: match.substring(1, match.length - 1),
@@ -190,21 +190,6 @@ export async function generateSwagger() {
             responses: {
               200: {
                 description: 'OK',
-                // content: {
-                //   'application/json': {
-                //     schema: {
-                //       type: 'array',
-                //       items: {
-                //         type: 'object',
-                //         properties: {
-                //           user_id: {
-                //             type: 'integer',
-                //           },
-                //         },
-                //       },
-                //     },
-                //   },
-                // },
               },
             },
           };
