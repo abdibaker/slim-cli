@@ -2,6 +2,7 @@ import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 import getDataType from './helpers/getDataType.js';
 import { excludedFields, updatedAtFieldArray } from './CONST.js';
+import inflection from 'inflection';
 
 dotenv.config();
 
@@ -24,6 +25,44 @@ export const conn = mysql.createPool({
   database: DB_NAME,
 });
 
+interface Row {
+  ['key']: string;
+}
+
+export async function identifyTableName(
+  tableNameToIdentify: string | undefined
+) {
+  if (tableNameToIdentify === undefined) {
+    return null;
+  }
+  let tableName: string | null = null;
+  try {
+    for (let i = 0; i <= 5; i++) {
+      let name = tableNameToIdentify;
+      i === 1 && (name = inflection.tableize(tableNameToIdentify));
+      i === 2 && (name = inflection.dasherize(tableNameToIdentify));
+      i === 3 && (name = inflection.underscore(tableNameToIdentify));
+      i === 4 && (name = inflection.camelize(tableNameToIdentify));
+      i === 5 && (name = tableNameToIdentify.toLowerCase());
+
+      const [rows] = (await conn.query(
+        `SHOW TABLES LIKE '%${name}%'`
+      )) as unknown as [Row[]][];
+
+      if (rows && rows.length > 0) {
+        tableName = Object.values(rows[0])[0] as unknown as string;
+        break;
+      }
+    }
+
+    return tableName;
+  } catch (error) {
+    throw new Error(
+      `Error identifying table name: ${(error as Error).message}`
+    );
+  }
+}
+
 export async function fetchPrimaryKey(tableName: string) {
   try {
     const [rows] = (await conn.query(
@@ -36,9 +75,12 @@ export async function fetchPrimaryKey(tableName: string) {
 }
 
 export async function fetchPrimaryKeyType(
-  tableName: string,
+  tableName: string | null,
   primaryKey: string
 ) {
+  if (!tableName) {
+    return { type: 'integer' };
+  }
   try {
     const [rows] = (await conn.query(`DESCRIBE \`${tableName}\``)) as any;
     const primaryKeyRow = rows.find((row: any) => row.Field === primaryKey);

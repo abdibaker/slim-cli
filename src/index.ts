@@ -5,11 +5,11 @@ import inflection from 'inflection';
 import { cloneGitHubRepository } from './create.js';
 import { createComponent } from './createComponent.js';
 import { fetchAllColumns, fetchPrimaryKey, fetchPrimaryKeyType } from './db.js';
+import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
 import { getClassName, getTableName } from './inquirer.js';
 import { generateSwagger } from './swaggerGenerator.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
-import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
 
 async function generateApi(tableNameArq: string | undefined) {
   try {

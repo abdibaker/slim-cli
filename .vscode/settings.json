@@ -3,6 +3,7 @@
     "dasherize",
     "datetime",
     "nanospinner",
+    "tableize",
     "tinyint"
   ]
 }

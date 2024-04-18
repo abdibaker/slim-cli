@@ -20,7 +20,7 @@ export async function getTableName(tableNameArg: string | undefined) {
   const [potentialPrefix, ...rest] = parts;
 
   if (rest.length > 0) {
-    const hasPrefix = await inquirer.prompt([
+    const { hasPrefix } = await inquirer.prompt([
       {
         type: 'confirm',
         name: 'hasPrefix',
@@ -29,8 +29,8 @@ export async function getTableName(tableNameArg: string | undefined) {
         )} the prefix of table ${chalk.hex('#f97316')(tableName)}?`,
       },
     ]);
-
-    if (hasPrefix) {
+    
+    if (await hasPrefix) {
       return {
         tableName,
         tableNameWithoutPrefix: rest.join('_'),

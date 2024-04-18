@@ -3,6 +3,7 @@ import { ROUTES_FILE } from './CONST.js';
 import { generateDtoSchema } from './generateDtoSchema.js';
 import inflection from 'inflection';
 import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
+import { fetchPrimaryKeyType, identifyTableName } from './db.js';
 
 interface SwaggerPathParameters {
   name: string;
@@ -156,15 +157,22 @@ export async function generateSwagger() {
         const service = controller?.replace('Controller', 'Service');
 
         let parameters: SwaggerPathParameters[] = [];
+
         const matches: RegExpMatchArray | null = path.match(/{[^}]+}/g);
 
         if (matches) {
-          parameters = matches.map(match => ({
-            name: match.substring(1, match.length - 1),
-            in: 'path',
-            required: true,
-            schema: { type: 'integer' },
-          }));
+          const tableName = await identifyTableName(tag);
+          parameters = await Promise.all(
+            matches.map(async match => ({
+              name: match.substring(1, match.length - 1),
+              in: 'path',
+              required: true,
+              schema: await fetchPrimaryKeyType(
+                tableName,
+                match.substring(1, match.length - 1)
+              ),
+            }))
+          );
         }
 
         if (!tag) {
@@ -175,7 +183,7 @@ export async function generateSwagger() {
           path: `/${kebabCaseClassName(tag)}${path}`,
           method,
           controller,
-          tag: inflection.titleize(inflection.underscore(tag)),
+          tag: inflection.classify(inflection.underscore(tag)),
           action,
           parameters: JSON.stringify(parameters),
         };
