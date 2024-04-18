@@ -191,21 +191,6 @@ export async function generateSwagger() {
             responses: {
               200: {
                 description: 'OK',
-                // content: {
-                //   'application/json': {
-                //     schema: {
-                //       type: 'array',
-                //       items: {
-                //         type: 'object',
-                //         properties: {
-                //           user_id: {
-                //             type: 'integer',
-                //           },
-                //         },
-                //       },
-                //     },
-                //   },
-                // },
               },
             },
           };
