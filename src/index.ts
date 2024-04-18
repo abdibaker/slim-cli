@@ -9,6 +9,7 @@ import { getClassName, getTableName } from './inquirer.js';
 import { generateSwagger } from './swaggerGenerator.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
+import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
 
 async function generateApi(tableNameArq: string | undefined) {
   try {
@@ -28,13 +29,6 @@ async function generateApi(tableNameArq: string | undefined) {
       : await getClassName(tableNameWithoutPrefix);
 
     const classNameLowFirst = inflection.camelize(className, true);
-
-    function kebabCaseClassName(className: string) {
-      const words = inflection.dasherize(className).split('_');
-      const lastIndex = words.length - 1;
-      words[lastIndex] = inflection.pluralize(words[lastIndex]!);
-      return words.join('-').toLowerCase();
-    }
 
     const routeName = kebabCaseClassName(tableNameWithoutPrefix);
 

@@ -1,6 +1,8 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { ROUTES_FILE } from './CONST.js';
 import { generateDtoSchema } from './generateDtoSchema.js';
+import inflection from 'inflection';
+import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
 
 interface SwaggerPathParameters {
   name: string;
@@ -112,7 +114,7 @@ export async function generateSwagger() {
     /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\);)/g;
 
   const matches: RegExpMatchArray | null = routeContent.match(routePattern);
-  
+
   try {
     if (matches) {
       const routeProcessing = matches.map(async route => {
@@ -155,7 +157,7 @@ export async function generateSwagger() {
 
         let parameters: SwaggerPathParameters[] = [];
         const matches: RegExpMatchArray | null = path.match(/{[^}]+}/g);
-        
+
         if (matches) {
           parameters = matches.map(match => ({
             name: match.substring(1, match.length - 1),
@@ -169,12 +171,11 @@ export async function generateSwagger() {
           return;
         }
 
-        const formattedTag: string = tag[0]?.toUpperCase() + tag.slice(1);
         const routeObj = {
-          path: `/${tag}s${path}`,
+          path: `/${kebabCaseClassName(tag)}${path}`,
           method,
           controller,
-          tag: formattedTag,
+          tag: inflection.titleize(tag),
           action,
           parameters: JSON.stringify(parameters),
         };
