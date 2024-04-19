@@ -183,7 +183,7 @@ export async function generateSwagger() {
           path: `/${kebabCaseClassName(tag)}${path}`,
           method,
           controller,
-          tag: inflection.humanize(tag),
+          tag: inflection.camelize(tag),
           action,
           parameters: JSON.stringify(parameters),
         };
