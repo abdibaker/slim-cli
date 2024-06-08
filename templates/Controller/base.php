@@ -15,7 +15,7 @@ final class {{className}}Controller
 {
   private {{className}}Service ${{classNameLowFirst}}Service;
 
-  public function __construct(private Container $container)
+  public function __construct(private readonly Container $container)
   {
     $this->{{classNameLowFirst}}Service = $this->container->get('{{classNameLowFirst}}Service');
   }
@@ -49,14 +49,10 @@ final class {{className}}Controller
         {{phpDto}}
       ];
 
-      foreach ($dto as $key => $value) {
-        if ($value === null) {
-            unset($dto[$key]);
-        }
-      }
+      $dto = array_filter($dto, fn($value) => $value !== null);
 
-     $this->{{classNameLowFirst}}Service->create($dto);
-     return $response->withStatus(201);
+      $this->{{classNameLowFirst}}Service->create($dto);
+      return $response->withStatus(201);
     } catch (Exception $e) {
       $duplicateErrorCode = 1062;
       $foreignErrorCode = 1452;
@@ -81,31 +77,23 @@ final class {{className}}Controller
         {{phpUpdateDto}}
       ];
 
-      foreach ($dto as $key => $value) {
-        if ($value === null) {
-            unset($dto[$key]);
-        }
-      }
+      $dto = array_filter($dto, fn($value) => $value !== null);
 
       $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dto);
       return $response->withStatus(204);
     } catch (Exception $e) {
-      $duplicateErrorCode = 1062;
-      $foreignErrorCode = 1452;
-
       return $response->withJson(['error' => $e->getMessage()], 500);
     }
   }
 
   public function delete(Request $request, Response $response, array $args): Response
   {
-   // try {
-   //   $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKey}}']);
-   //   return $response->withJson($result);
-   // } catch (Exception $e) {
-   //   return $response->withJson(['error' => $e->getMessage()], 400);
-   // }
-   return $response->withJson(['error' => 'Disabled'], 400); // uncomment above code to enable delete
+   try {
+     $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKey}}']);
+     return $response->withJson($result);
+   } catch (Exception $e) {
+     return $response->withJson(['error' => $e->getMessage()], 400);
+   }
   }
 
 }

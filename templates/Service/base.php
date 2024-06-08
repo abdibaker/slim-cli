@@ -9,7 +9,7 @@ use Exception;
 
 final class {{className}}Service
 {
-  public function __construct(private Connection $conn)
+  public function __construct(private readonly Connection $conn)
   {
   }
   public function getAll(): array
