@@ -1,13 +1,19 @@
 import path from 'path';
 import { readFileSync } from 'fs';
 import { SRC_DIR } from './CONST.js';
-import { DB_NAME, conn } from './db.js';
-import getTypeInfo, { MysqlType } from './helpers/getDataType.js';
+import {
+  DatabaseType,
+  getTypeInfo,
+  MysqlType,
+  PostgresType,
+} from './helpers/getDataType.js';
+import { getConnection } from './db.js';
 
 interface ColumnInfo {
   COLUMN_NAME: string;
-  DATA_TYPE: MysqlType;
-  COLUMN_TYPE: string;
+  DATA_TYPE: string;
+  COLUMN_TYPE?: string;
+  UDT_NAME?: string;
   IS_NULLABLE: 'NO' | 'YES';
 }
 
@@ -56,32 +62,64 @@ function extractColumnsFromCode(code: string, functionName: string): string[] {
   return columns;
 }
 
-async function getColumnTypeInfo(columns: string[]): Promise<ColumnInfo[]> {
+export async function getColumnTypeInfo(
+  columns: string[]
+): Promise<ColumnInfo[]> {
   if (columns.length === 0) {
     return [];
   }
-  const columnsWithType = (
-    await conn.query(`
-        SELECT DISTINCT COLUMN_NAME, data_type, COLUMN_TYPE
-        FROM information_schema.columns
-        WHERE table_schema = '${DB_NAME}'
-        AND COLUMN_NAME IN (${columns.join(',')})`)
-  )[0] as unknown as ColumnInfo[];
+
+  const connection = getConnection();
+  const client = connection.client.config.client;
+  const DB_NAME = process.env.DB_NAME;
+
+  let columnsWithType: ColumnInfo[];
+
+  if (client === 'mysql2') {
+    columnsWithType = (
+      await connection.raw(
+        `
+      SELECT DISTINCT COLUMN_NAME as column_name, DATA_TYPE as data_type, COLUMN_TYPE as column_type
+      FROM information_schema.columns
+      WHERE table_schema = ?
+      AND COLUMN_NAME IN (${columns.map(() => '?').join(',')})
+    `,
+        [DB_NAME, ...columns]
+      )
+    )[0] as ColumnInfo[];
+  } else if (client === 'pg') {
+    columnsWithType = (
+      await connection.raw(
+        `
+      SELECT DISTINCT column_name, data_type
+      FROM information_schema.columns
+      WHERE table_catalog = ?
+      AND column_name = ANY(?)
+    `,
+        [DB_NAME, columns]
+      )
+    ).rows as ColumnInfo[];
+  } else {
+    throw new Error(`Unsupported database client: ${client}`);
+  }
 
   return columnsWithType;
 }
 
 function buildSchemaObject(columnsWithType: ColumnInfo[]): object {
+  const dbType = process.env.DB_CLIENT as DatabaseType;
   const schemaObject: { type: string; properties: Record<string, unknown> } = {
     type: 'object',
     properties: {},
   };
 
   columnsWithType.forEach(column => {
-    const { COLUMN_NAME, ...typeInfo } = column;
+    const { COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, UDT_NAME } = column;
     schemaObject.properties[COLUMN_NAME] = getTypeInfo(
-      typeInfo.DATA_TYPE,
-      typeInfo.COLUMN_TYPE
+      dbType,
+      DATA_TYPE as MysqlType | PostgresType,
+      COLUMN_TYPE,
+      UDT_NAME
     );
   });
 

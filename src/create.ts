@@ -9,40 +9,48 @@ import gradient from 'gradient-string';
 import { createSpinner } from 'nanospinner';
 import path from 'path';
 
-export function cloneGitHubRepository(projectName: string) {
-  const repoUrl = 'https://github.com/abdibaker/slim-template.git';
+export function cloneGitHubRepository(projectName: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const repoUrl = 'https://github.com/abdibaker/slim-template.git';
+    const child = exec(`git clone ${repoUrl} ${projectName}`);
 
-  const child = exec(`git clone ${repoUrl} ${projectName}`);
+    const spinner = createSpinner('Creating project...\n');
 
-  const spinner = createSpinner('Creating project...\n');
-
-  if (child.stdout) {
-    child.stdout.on('data', data => {
-      console.log(data.toString());
-    });
-  }
-
-  if (child.stderr) {
-    child.stderr.on('data', () => {
-      spinner.start();
-    });
-  }
-
-  child.on('error', error => {
-    console.error(`Error: ${error.message}`);
-  });
-
-  child.on('close', async code => {
-    if (code === 0) {
-      spinner.stop();
-      chalkAnimation.rainbow('🚀 Installing dependencies...\n');
-      await installDependencies(projectName);
-      addEnv(projectName);
-      console.log(chalk.green('Dependencies installed.'));
-      success();
-    } else {
-      console.error(chalk.red(`Failed to create Project with code ${code}`));
+    if (child.stdout) {
+      child.stdout.on('data', data => {
+        console.log(data.toString());
+      });
     }
+
+    if (child.stderr) {
+      child.stderr.on('data', () => {
+        spinner.start();
+      });
+    }
+
+    child.on('error', error => {
+      console.error(`Error: ${error.message}`);
+      reject(error);
+    });
+
+    child.on('close', async code => {
+      if (code === 0) {
+        spinner.stop();
+        chalkAnimation.rainbow('🚀 Installing dependencies...\n');
+        try {
+          await installDependencies(projectName);
+          addEnv(projectName);
+          console.log(chalk.green('Dependencies installed.'));
+          await success();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      } else {
+        console.error(chalk.red(`Failed to create Project with code ${code}`));
+        reject(new Error(`Failed to create Project with code ${code}`));
+      }
+    });
   });
 }
 
