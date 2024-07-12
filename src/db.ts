@@ -30,7 +30,7 @@ export function getConnection() {
 
   const { DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_CLIENT } = process.env;
 
-  const SUPPORTED_DB_CLIENTS = ['mysql', 'mysql2', 'postgresql', 'pg'];
+  const SUPPORTED_DB_CLIENTS = ['mysql', 'postgresql'];
 
   if (
     DB_HOST === undefined ||
@@ -45,12 +45,7 @@ export function getConnection() {
     throw new Error(`Unsupported database client: ${DB_CLIENT}`);
   }
 
-  const DB_CLIENT_NAME =
-    DB_CLIENT === 'mysql'
-      ? 'mysql2'
-      : DB_CLIENT === 'postgresql'
-      ? 'pg'
-      : DB_CLIENT;
+  const DB_CLIENT_NAME = DB_CLIENT === 'postgresql' ? 'pg' : 'mysql2';
 
   conn = knex({
     client: DB_CLIENT_NAME,
@@ -148,8 +143,7 @@ export async function fetchPrimaryKey(tableName: string): Promise<string> {
       throw new Error(`Unsupported database client: ${client}`);
     }
   } catch (error) {
-    console.error('Error fetching primary key:', error);
-    throw error;
+    return '';
   }
 }
 

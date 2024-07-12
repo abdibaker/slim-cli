@@ -14,6 +14,11 @@ export async function generateApi(tableNameArg: string | undefined) {
       tableNameArg
     );
     const primaryKey = await fetchPrimaryKey(tableName);
+    if (!primaryKey) {
+      throw new Error(
+        `Error fetching primary key looks like there is no table with this name: "${tableName}"`
+      );
+    }
     const primaryKeyType = await fetchPrimaryKeyType(tableName, primaryKey);
     const { columnsToSelect, phpDto, phpUpdateDto } = await fetchAllColumns(
       tableName

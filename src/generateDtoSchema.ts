@@ -10,11 +10,11 @@ import {
 import { getConnection } from './db.js';
 
 interface ColumnInfo {
-  COLUMN_NAME: string;
-  DATA_TYPE: string;
-  COLUMN_TYPE?: string;
-  UDT_NAME?: string;
-  IS_NULLABLE: 'NO' | 'YES';
+  column_name: string;
+  data_type: string;
+  column_type?: string;
+  udt_name?: string;
+  is_nullable: 'NO' | 'YES';
 }
 
 const CONTROLLER_PATH = path.join(SRC_DIR, 'Controller');
@@ -79,24 +79,25 @@ export async function getColumnTypeInfo(
     columnsWithType = (
       await connection.raw(
         `
-      SELECT DISTINCT COLUMN_NAME as column_name, DATA_TYPE as data_type, COLUMN_TYPE as column_type
-      FROM information_schema.columns
-      WHERE table_schema = ?
-      AND COLUMN_NAME IN (${columns.map(() => '?').join(',')})
-    `,
-        [DB_NAME, ...columns]
+       SELECT DISTINCT COLUMN_NAME as column_name, data_type as data_type, COLUMN_TYPE as column_type
+        FROM information_schema.columns
+        WHERE table_schema = '${DB_NAME}'
+        AND COLUMN_NAME IN (${columns.join(',')})`
       )
     )[0] as ColumnInfo[];
   } else if (client === 'pg') {
+    const columnsInObject = `{ ${columns
+      .map(item => item.replace(/'/g, ''))
+      .join(',')} }`;
     columnsWithType = (
       await connection.raw(
         `
-      SELECT DISTINCT column_name, data_type
-      FROM information_schema.columns
-      WHERE table_catalog = ?
-      AND column_name = ANY(?)
-    `,
-        [DB_NAME, columns]
+        SELECT DISTINCT column_name, data_type, udt_name, is_nullable
+        FROM information_schema.columns
+        WHERE table_catalog = ?
+        AND column_name = ANY(?)
+        `,
+        [DB_NAME, columnsInObject]
       )
     ).rows as ColumnInfo[];
   } else {
@@ -107,19 +108,20 @@ export async function getColumnTypeInfo(
 }
 
 function buildSchemaObject(columnsWithType: ColumnInfo[]): object {
-  const dbType = process.env.DB_CLIENT as DatabaseType;
+  const dbType = (process.env.DB_CLIENT || 'mysql') as DatabaseType;
+
   const schemaObject: { type: string; properties: Record<string, unknown> } = {
     type: 'object',
     properties: {},
   };
 
   columnsWithType.forEach(column => {
-    const { COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, UDT_NAME } = column;
-    schemaObject.properties[COLUMN_NAME] = getTypeInfo(
+    const { column_name, data_type, column_type, udt_name } = column;
+    schemaObject.properties[column_name] = getTypeInfo(
       dbType,
-      DATA_TYPE as MysqlType | PostgresType,
-      COLUMN_TYPE,
-      UDT_NAME
+      data_type as MysqlType | PostgresType,
+      column_type,
+      udt_name
     );
   });
 
