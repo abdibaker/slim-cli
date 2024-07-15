@@ -93,11 +93,11 @@ export async function identifyTableName(
           `
           SELECT table_name
           FROM information_schema.tables
-          WHERE table_schema = 'public'
+          WHERE table_schema = ?
             AND table_name ILIKE ?
           LIMIT 1
         `,
-          [`%${name}%`]
+          [process.env.DB_SCHEMA || 'public', `%${name}%`]
         );
 
         if (rows && rows.length > 0) {
@@ -129,14 +129,17 @@ export async function fetchPrimaryKey(tableName: string): Promise<string> {
     } else if (client === 'pg') {
       const { rows } = await connection.raw(
         `
-        SELECT a.attname
-        FROM   pg_index i
-        JOIN   pg_attribute a ON a.attrelid = i.indrelid
+          SELECT a.attname
+          FROM   pg_index i
+          JOIN   pg_attribute a ON a.attrelid = i.indrelid
                               AND a.attnum = ANY(i.indkey)
-        WHERE  i.indrelid = ?::regclass
-        AND    i.indisprimary
+          JOIN   pg_class c ON c.oid = i.indrelid
+          JOIN   pg_namespace n ON n.oid = c.relnamespace
+          WHERE  c.relname = ?  -- Table name
+          AND    n.nspname = ?  -- Schema name
+          AND    i.indisprimary;
       `,
-        [tableName]
+        [tableName, process.env.DB_SCHEMA || 'public']
       );
       return rows.length > 0 ? rows[0].attname : 'id';
     } else {
@@ -177,9 +180,11 @@ export async function fetchPrimaryKeyType(
         `
         SELECT data_type, udt_name
         FROM information_schema.columns
-        WHERE table_name = ? AND column_name = ?
+        WHERE table_schema = ?
+          AND table_name = ?
+          AND column_name = ?;
       `,
-        [tableName, primaryKey]
+        [process.env.DB_SCHEMA || 'public', tableName, primaryKey]
       );
       primaryKeyInfo = rows[0];
     } else {
@@ -246,9 +251,9 @@ export async function fetchAllColumns(tableName: string) {
             ) AS pk ON columns.column_name = pk.column_name
           WHERE
             columns.table_name = :tableName
-            AND columns.table_schema = 'public';
+            AND columns.table_schema = :schema;
       `,
-        { tableName }
+        { tableName, schema: process?.env.DB_SCHEMA || 'public' }
       );
 
       rows = result.rows;

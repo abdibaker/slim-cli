@@ -95,9 +95,10 @@ export async function getColumnTypeInfo(
         SELECT DISTINCT column_name, data_type, udt_name, is_nullable
         FROM information_schema.columns
         WHERE table_catalog = ?
-        AND column_name = ANY(?)
+          AND table_schema = ?
+          AND column_name = ANY(?);
         `,
-        [DB_NAME, columnsInObject]
+        [DB_NAME, process.env.DB_SCHEMA || 'public', columnsInObject]
       )
     ).rows as ColumnInfo[];
   } else {
