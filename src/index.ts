@@ -10,6 +10,7 @@ import { getClassName, getTableName } from './inquirer.js';
 import { generateSwagger } from './swaggerGenerator.js';
 import { updateRoutesFile } from './updateRoutesFile.js';
 import { updateServicesFile } from './updateServicesFile.js';
+import startServer from './startServer.js';
 
 async function generateApi(tableNameArq: string | undefined) {
   try {
@@ -78,7 +79,6 @@ program
   .command('generate [tableName]')
   .alias('g')
   .description('generate api')
-  .option('-j, --join', 'generate with join')
   .action(tableName => generateApi(tableName));
 
 program
@@ -93,5 +93,7 @@ program
   .alias('sw')
   .description('generate swagger')
   .action(generateSwagger);
+
+program.command('start').description('start server').action(startServer);
 
 program.parse(process.argv);
