@@ -73,6 +73,8 @@ function readFileContent(filePath: string): string {
   return readFileSync(filePath, 'utf8');
 }
 
+const { SERVE_HOST, SERVE_PORT } = process.env;
+
 const swagger: SwaggerSchema = {
   openapi: '3.0.3',
   info: {
@@ -82,10 +84,12 @@ const swagger: SwaggerSchema = {
     contact: {
       email: 'abdibaker1@gmail.com',
       name: '',
-      url: 'http://127.0.0.1:8080',
+      url: `http://${SERVE_HOST}:${SERVE_PORT}`,
     },
   },
-  servers: [{ url: 'http://127.0.0.1:8080', description: 'Local server' }],
+  servers: [
+    { url: `http://${SERVE_HOST}:${SERVE_PORT}`, description: 'Local server' },
+  ],
   components: {
     securitySchemes: {
       bearerAuth: {

@@ -12,7 +12,7 @@ export function cloneGitHubRepository(projectName: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const repoUrl = 'https://github.com/abdibaker/slim-template.git';
     const spinner = createSpinner('Creating project...').start();
-    
+
     const child = exec(`git clone ${repoUrl} ${projectName}`);
 
     if (child.stdout) {
