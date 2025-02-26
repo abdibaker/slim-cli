@@ -97,9 +97,9 @@ program.addHelpText(
   'afterAll',
   `
 Examples:
-  $ slim create my-project     Create a new Slim project named 'my-project' (alias: c)
-  $ slim generate users        Generate API for the 'users' table (alias: g)
-  $ slim swagger               Generate Swagger documentation (alias: sw)
+  $ slim create my-project     Create a new Slim project named 'my-project'
+  $ slim generate users        Generate API for the 'users' table
+  $ slim swagger               Generate Swagger documentation
   $ slim start                 Start the development server
 `
 );

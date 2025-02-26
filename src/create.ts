@@ -2,9 +2,7 @@
 
 import chalk from 'chalk';
 import { exec } from 'child_process';
-import figlet from 'figlet';
 import fs from 'fs-extra';
-import gradient from 'gradient-string';
 import { createSpinner } from 'nanospinner';
 import path from 'path';
 
@@ -115,18 +113,13 @@ function addEnv(projectName: string): Promise<void> {
 
 async function success() {
   console.clear();
-  const msg = `Successfully \n Created!`;
-  figlet(msg, (err: any, data: any) => {
-    if (err) {
-      console.error('Something went wrong with figlet');
-      console.error(err);
-      return;
-    }
-    console.log(gradient.pastel.multiline(data));
-    console.log(chalk.green('\nYour project is ready to use!'));
-    console.log(chalk.cyan('Next steps:'));
-    console.log(chalk.white('1. cd into your project directory'));
-    console.log(chalk.white('2. Configure your .env file'));
-    console.log(chalk.white('3. Run the project with composer start'));
-  });
+  console.log(chalk.green.bold('\n================================='));
+  console.log(chalk.green.bold('  Project Successfully Created!  '));
+  console.log(chalk.green.bold('=================================\n'));
+
+  console.log(chalk.green('\nYour project is ready to use!'));
+  console.log(chalk.cyan('Next steps:'));
+  console.log(chalk.white('1. cd into your project directory'));
+  console.log(chalk.white('2. Configure your .env file'));
+  console.log(chalk.white('3. Run the project with slim start'));
 }
