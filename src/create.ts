@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import chalk from 'chalk';
-import chalkAnimation from 'chalk-animation';
 import { exec } from 'child_process';
 import figlet from 'figlet';
 import fs from 'fs-extra';
@@ -11,77 +10,114 @@ import path from 'path';
 
 export function cloneGitHubRepository(projectName: string) {
   const repoUrl = 'https://github.com/abdibaker/slim-template.git';
+  const spinner = createSpinner('Creating project...').start();
 
   const child = exec(`git clone ${repoUrl} ${projectName}`);
 
-  const spinner = createSpinner('Creating project...\n');
-
   if (child.stdout) {
-    child.stdout.on('data', data => {
-      console.log(data.toString());
-    });
+    child.stdout.on('data', data => {});
   }
 
   if (child.stderr) {
-    child.stderr.on('data', () => {
-      spinner.start();
+    child.stderr.on('data', data => {
+      if (data.toString().includes('error')) {
+        spinner.error({ text: `Error: ${data.toString()}` });
+      }
     });
   }
 
   child.on('error', error => {
-    console.error(`Error: ${error.message}`);
+    spinner.error({ text: `Error: ${error.message}` });
+    process.exit(1);
   });
 
   child.on('close', async code => {
     if (code === 0) {
-      spinner.stop();
-      chalkAnimation.rainbow('🚀 Installing dependencies...\n');
-      await installDependencies(projectName);
-      addEnv(projectName);
-      console.log(chalk.green('Dependencies installed.'));
-      success();
+      spinner.success({ text: 'Project created successfully!' });
+      await setupProject(projectName);
     } else {
-      console.error(chalk.red(`Failed to create Project with code ${code}`));
+      spinner.error({ text: `Failed to create project with code ${code}` });
+      process.exit(1);
     }
   });
 }
 
-async function installDependencies(projectName: string) {
+async function setupProject(projectName: string) {
+  try {
+    await addEnv(projectName);
+    await installDependencies(projectName);
+    await success();
+  } catch (error) {
+    console.error(chalk.red(`Setup failed: ${(error as Error).message}`));
+    process.exit(1);
+  }
+}
+
+async function installDependencies(projectName: string): Promise<void> {
+  const spinner = createSpinner('Installing dependencies...').start();
+
   return new Promise<void>((resolve, reject) => {
     exec(
       `cd ${projectName} && composer install && npm install`,
       (error, stdout, stderr) => {
         if (error) {
-          console.error(
-            chalk.red(
-              `Error running dependencies installation: ${error.message}`
-            )
-          );
-          process.exit(1);
+          spinner.error({
+            text: `Dependencies installation failed: ${error.message}`,
+          });
+          reject(error);
+          return;
         }
-        console.log(chalk.green('Dependencies installed.'));
+        spinner.success({ text: 'Dependencies installed successfully!' });
         resolve();
       }
     );
   });
 }
 
-function addEnv(projectName: string) {
-  const envExamplePath = path.join(
-    process.cwd(),
-    `${projectName}/.env.example`
-  );
-  const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
-  fs.writeFileSync(`${projectName}/.env`, envExampleContent);
+function addEnv(projectName: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    try {
+      const envExamplePath = path.join(
+        process.cwd(),
+        `${projectName}/.env.example`
+      );
+      const envPath = path.join(process.cwd(), `${projectName}/.env`);
 
-  // fs.removeSync(envExamplePath);
-  fs.removeSync(path.join(process.cwd(), `${projectName}/.git`));
+      // Check if the file exists before attempting to read it
+      if (!fs.existsSync(envExamplePath)) {
+        throw new Error('.env.example file not found');
+      }
+
+      const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
+      fs.writeFileSync(envPath, envExampleContent);
+
+      // Remove git directory to start fresh
+      const gitDir = path.join(process.cwd(), `${projectName}/.git`);
+      if (fs.existsSync(gitDir)) {
+        fs.removeSync(gitDir);
+      }
+
+      resolve();
+    } catch (error) {
+      reject(error);
+    }
+  });
 }
 
 async function success() {
   console.clear();
-  const msg = `Successfully \n Created!.`;
+  const msg = `Successfully \n Created!`;
   figlet(msg, (err: any, data: any) => {
+    if (err) {
+      console.error('Something went wrong with figlet');
+      console.error(err);
+      return;
+    }
     console.log(gradient.pastel.multiline(data));
+    console.log(chalk.green('\nYour project is ready to use!'));
+    console.log(chalk.cyan('Next steps:'));
+    console.log(chalk.white('1. cd into your project directory'));
+    console.log(chalk.white('2. Configure your .env file'));
+    console.log(chalk.white('3. Run the project with composer start'));
   });
 }
