@@ -5,6 +5,7 @@ import { generateApi } from './generateApi.js';
 import { generateSwagger } from './swaggerGenerator.js';
 import startServer from './startServer.js';
 import chalk from 'chalk';
+import { buildApp } from './build.js';
 
 // Set version from package.json
 program.version('0.4.0-beta', '-v, --version', 'output the current version');
@@ -92,6 +93,31 @@ program
     }
   });
 
+program
+  .command('build')
+  .description('Build the project for production')
+  .option('--skip-composer', 'Skip running composer install')
+  .option('--verbose', 'Display detailed output during build process')
+  .option('--output <filename>', 'Specify custom output zip filename')
+  .action(async options => {
+    try {
+      await buildApp({
+        skipComposer: options.skipComposer || false,
+        verbose: options.verbose || false,
+        outputZip: options.output
+      });
+    } catch (error) {
+      console.error(
+        chalk.red(
+          `Failed to build project: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        )
+      );
+      process.exit(1);
+    }
+  });
+
 // Add a default command when no command is specified
 program.addHelpText(
   'afterAll',
@@ -101,6 +127,13 @@ Examples:
   $ slim generate users        Generate API for the 'users' table
   $ slim swagger               Generate Swagger documentation
   $ slim start                 Start the development server
+  $ slim build [options]       Build the project for production
+    Options:
+      --skip-composer          Skip running composer install
+      --verbose                Display detailed output during build process
+      --output <filename>      Specify custom output zip filename
+    The build command will create a zip archive of your project in the current directory.
+    The archive will contain the production-ready version of your application.
 `
 );
 

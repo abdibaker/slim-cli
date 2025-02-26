@@ -9,7 +9,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "npx tsx scripts/prepare.ts && tsc -w",
-    "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --external commander --external dotenv --external inquirer --external knex --external pg --external mysql2 --external fs-extra --external nanospinner --external inflection --minify",
+    "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --external commander --external dotenv --external inquirer --external knex --external pg --external mysql2 --external fs-extra --external nanospinner --external inflection --external archiver --minify",
     "link": "chmod +x ./dist/index.js && bun link @hmy-tech/slim-cli",
     "link-cli": "bun unlink && bun run build-prod && chmod +x ./dist/index.js && bun link",
     "deploy": "bun run build-prod && npm publish --access public"
@@ -18,6 +18,7 @@
   "author": "Abdillah Bakari Ali",
   "license": "MIT",
   "devDependencies": {
+    "@types/archiver": "^5.3.4",
     "@types/figlet": "^1.5.8",
     "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.7",
@@ -25,6 +26,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "archiver": "^6.0.1",
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
     "dotenv": "^16.4.5",
