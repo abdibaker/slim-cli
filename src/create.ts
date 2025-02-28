@@ -3,13 +3,13 @@
 import chalk from 'chalk';
 import { exec } from 'child_process';
 import fs from 'fs-extra';
-import { createSpinner } from 'nanospinner';
 import path from 'path';
+import { createSimpleSpinner } from './utils/simpleSpinner.js';
 
 export function cloneGitHubRepository(projectName: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const repoUrl = 'https://github.com/abdibaker/slim-template.git';
-    const spinner = createSpinner('Creating project...').start();
+    const spinner = createSimpleSpinner('Creating project...').start();
 
     const child = exec(`git clone ${repoUrl} ${projectName}`);
 
@@ -61,7 +61,7 @@ async function setupProject(projectName: string) {
 }
 
 async function installDependencies(projectName: string): Promise<void> {
-  const spinner = createSpinner('Installing dependencies...').start();
+  const spinner = createSimpleSpinner('Installing dependencies...').start();
 
   return new Promise<void>((resolve, reject) => {
     exec(

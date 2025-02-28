@@ -9,7 +9,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "npx tsx scripts/prepare.ts && tsc -w",
-    "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --external commander --external dotenv --external inquirer --external knex --external pg --external mysql2 --external fs-extra --external nanospinner --external inflection --external archiver --minify",
+    "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --external commander --external dotenv --external inquirer --external knex --external pg --external mysql2 --external fs-extra --external inflection --external archiver --minify",
     "link": "chmod +x ./dist/index.js && bun link @hmy-tech/slim-cli",
     "link-cli": "bun unlink && bun run build-prod && chmod +x ./dist/index.js && bun link",
     "deploy": "bun run build-prod && npm publish --access public"
@@ -33,8 +33,7 @@
     "fs-extra": "^11.2.0",
     "inflection": "^3.0.0",
     "inquirer": "^9.2.15",
-    "knex": "^3.1.0",
-    "nanospinner": "^1.1.0"
+    "knex": "^3.1.0"
   },
   "optionalDependencies": {
     "chalk-animation": "^2.0.3",
