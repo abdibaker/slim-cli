@@ -1,9 +1,11 @@
+import chalk from 'chalk';
 import { readFileSync, writeFileSync } from 'fs';
-import { ROUTES_FILE } from './CONST.js';
-import { generateDtoSchema } from './generateDtoSchema.js';
 import inflection from 'inflection';
-import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
+import { ROUTES_FILE } from './CONST.js';
 import { fetchPrimaryKeyType, identifyTableName } from './db.js';
+import { generateDtoSchema } from './generateDtoSchema.js';
+import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
+import getIpAddressAndFreePort from './utils/getIpAndFreePort.js';
 
 interface SwaggerPathParameters {
   name: string;
@@ -73,7 +75,7 @@ function readFileContent(filePath: string): string {
   return readFileSync(filePath, 'utf8');
 }
 
-const { SERVE_HOST, SERVE_PORT } = process.env;
+const { ip, port } = await getIpAddressAndFreePort();
 
 const swagger: SwaggerSchema = {
   openapi: '3.0.3',
@@ -84,12 +86,10 @@ const swagger: SwaggerSchema = {
     contact: {
       email: 'abdibaker1@gmail.com',
       name: '',
-      url: `http://${SERVE_HOST}:${SERVE_PORT}`,
+      url: `http://${ip}:${port}`,
     },
   },
-  servers: [
-    { url: `http://${SERVE_HOST}:${SERVE_PORT}`, description: 'Local server' },
-  ],
+  servers: [{ url: `http://${ip}:${port}`, description: 'Local server' }],
   components: {
     securitySchemes: {
       bearerAuth: {
@@ -112,6 +112,14 @@ const swagger: SwaggerSchema = {
   paths: {},
 };
 
+/**
+ * Generates Swagger/OpenAPI documentation by parsing route definitions
+ * from the specified routes file. Each route is processed to extract
+ * HTTP method, path, controller, and action. Parameters and request
+ * bodies are determined for dynamic paths and appropriate schemas are
+ * generated. The resulting Swagger documentation is written to a JSON
+ * file for API documentation purposes.
+ */
 export async function generateSwagger() {
   const routeContent: string = readFileContent(ROUTES_FILE);
 
@@ -240,14 +248,12 @@ export async function generateSwagger() {
       });
       await Promise.all(routeProcessing);
     }
-
     writeFileSync(
       'public/swagger/swagger.json',
       JSON.stringify(swagger, null, 2)
     );
-    process.exit(0);
   } catch (error) {
-    console.error('An error occurred:', (error as Error).message);
+    console.error(chalk.red(`An error occurred: ${(error as Error).message}`));
     process.exit(1);
   }
 }

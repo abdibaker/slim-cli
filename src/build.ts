@@ -1,10 +1,11 @@
-import fs from 'fs-extra';
+import archiver from 'archiver';
+import chalk from 'chalk';
 import { exec as execCallback } from 'child_process';
+import fs from 'fs';
+import { access, copyFile, mkdir, rm } from 'fs/promises';
 import path from 'path';
 import { promisify } from 'util';
-import chalk from 'chalk';
 import { createSimpleSpinner } from './utils/simpleSpinner.js';
-import archiver from 'archiver';
 
 // Promisify exec for better async handling
 const exec = promisify(execCallback);
@@ -63,7 +64,7 @@ async function createZipWithArchiver(
     for (const { src, dest } of sourceDirs) {
       const fullSrcPath = path.join(tempDir, src);
       const stats = fs.statSync(fullSrcPath);
-      
+
       if (stats.isDirectory()) {
         // Add directory contents to zip
         archive.directory(fullSrcPath, dest);
@@ -87,6 +88,48 @@ async function isZipCommandAvailable(): Promise<boolean> {
     await exec('which zip');
     return true;
   } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Recursively copy a directory
+ * @param src - Source directory
+ * @param dest - Destination directory
+ */
+async function copyDir(src: string, dest: string): Promise<void> {
+  // Create destination directory if it doesn't exist
+  await mkdir(dest, { recursive: true });
+
+  // Read the contents of the source directory
+  const entries = fs.readdirSync(src);
+
+  for (const entry of entries) {
+    const srcPath = path.join(src, entry);
+    const destPath = path.join(dest, entry);
+
+    const stats = fs.statSync(srcPath);
+
+    if (stats.isDirectory()) {
+      // Recursively copy subdirectories
+      await copyDir(srcPath, destPath);
+    } else {
+      // Copy files
+      await copyFile(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * Check if a path exists
+ * @param filePath - Path to check
+ * @returns Promise that resolves to a boolean indicating if path exists
+ */
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
     return false;
   }
 }
@@ -116,7 +159,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
     }
 
     // Create temp directory if it doesn't exist
-    await fs.ensureDir(tempDirectory);
+    await mkdir(tempDirectory, { recursive: true });
 
     // Copy files and directories to the temp directory
     if (verbose) {
@@ -124,20 +167,24 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
     }
 
     await Promise.all([
-      fs.copy(
+      copyFile(
         path.join(cwd, 'composer.json'),
         path.join(tempDirectory, 'composer.json')
       ),
-      fs.copy(
+      copyFile(
         path.join(cwd, 'composer.lock'),
         path.join(tempDirectory, 'composer.lock')
       ),
-      fs.copy(
+      copyFile(
+        path.join(cwd, '.env.example'),
+        path.join(tempDirectory, '.env')
+      ),
+      copyFile(
         path.join(cwd, '.htaccess'),
         path.join(tempDirectory, '.htaccess')
       ),
-      fs.copy(path.join(cwd, 'src'), path.join(tempDirectory, 'src')),
-      fs.copy(path.join(cwd, 'public'), path.join(tempDirectory, 'public')),
+      copyDir(path.join(cwd, 'src'), path.join(tempDirectory, 'src')),
+      copyDir(path.join(cwd, 'public'), path.join(tempDirectory, 'public')),
     ]);
 
     // Change to the temp directory
@@ -183,15 +230,13 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
     }
 
     await Promise.all([
-      fs.remove(path.join(tempDirectory, 'composer.json')),
-      fs.remove(path.join(tempDirectory, 'composer.lock')),
-      fs
-        .pathExists(path.join(tempDirectory, 'public/local.php'))
-        .then(exists =>
-          exists
-            ? fs.remove(path.join(tempDirectory, 'public/local.php'))
-            : Promise.resolve()
-        ),
+      rm(path.join(tempDirectory, 'composer.json'), { force: true }),
+      rm(path.join(tempDirectory, 'composer.lock'), { force: true }),
+      pathExists(path.join(tempDirectory, 'public/local.php')).then(exists =>
+        exists
+          ? rm(path.join(tempDirectory, 'public/local.php'), { force: true })
+          : Promise.resolve()
+      ),
     ]);
 
     // Change back to the original directory
@@ -208,8 +253,8 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
     }
 
     // Remove existing zip file if it exists
-    if (await fs.pathExists(zipFilePath)) {
-      await fs.remove(zipFilePath);
+    if (await pathExists(zipFilePath)) {
+      await rm(zipFilePath, { force: true });
     }
 
     try {
@@ -240,7 +285,7 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
       }
 
       // Clean up the temp directory after successful zip creation
-      await fs.remove(tempDirectory);
+      await rm(tempDirectory, { recursive: true, force: true });
 
       if (verbose) {
         console.log(
@@ -274,8 +319,8 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
     }
 
     // Clean up temp directory if it exists
-    if (await fs.pathExists(tempDirectory)) {
-      await fs.remove(tempDirectory);
+    if (await pathExists(tempDirectory)) {
+      await rm(tempDirectory, { recursive: true, force: true });
     }
 
     if (verbose) {
@@ -300,5 +345,5 @@ export async function buildApp(options: BuildOptions = {}): Promise<void> {
  */
 export async function buildDirectoryExists(): Promise<boolean> {
   const buildDirectory = path.join(process.cwd(), 'build');
-  return fs.pathExists(buildDirectory);
+  return pathExists(buildDirectory);
 }

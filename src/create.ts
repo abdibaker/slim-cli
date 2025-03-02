@@ -2,7 +2,8 @@
 
 import chalk from 'chalk';
 import { exec } from 'child_process';
-import fs from 'fs-extra';
+import fs from 'fs';
+import { rm, readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { createSimpleSpinner } from './utils/simpleSpinner.js';
 
@@ -81,34 +82,35 @@ async function installDependencies(projectName: string): Promise<void> {
   });
 }
 
-function addEnv(projectName: string): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+async function addEnv(projectName: string): Promise<void> {
+  try {
+    const envExamplePath = path.join(
+      process.cwd(),
+      `${projectName}/.env.example`
+    );
+    const envPath = path.join(process.cwd(), `${projectName}/.env`);
+
+    // Check if the file exists before attempting to read it
     try {
-      const envExamplePath = path.join(
-        process.cwd(),
-        `${projectName}/.env.example`
-      );
-      const envPath = path.join(process.cwd(), `${projectName}/.env`);
-
-      // Check if the file exists before attempting to read it
-      if (!fs.existsSync(envExamplePath)) {
-        throw new Error('.env.example file not found');
-      }
-
-      const envExampleContent = fs.readFileSync(envExamplePath, 'utf8');
-      fs.writeFileSync(envPath, envExampleContent);
-
-      // Remove git directory to start fresh
-      const gitDir = path.join(process.cwd(), `${projectName}/.git`);
-      if (fs.existsSync(gitDir)) {
-        fs.removeSync(gitDir);
-      }
-
-      resolve();
+      await fs.promises.access(envExamplePath, fs.constants.R_OK);
     } catch (error) {
-      reject(error);
+      throw new Error('.env.example file not found');
     }
-  });
+
+    const envExampleContent = await readFile(envExamplePath, 'utf8');
+    await writeFile(envPath, envExampleContent);
+
+    // Remove git directory to start fresh
+    const gitDir = path.join(process.cwd(), `${projectName}/.git`);
+    try {
+      await fs.promises.access(gitDir, fs.constants.F_OK);
+      await rm(gitDir, { recursive: true, force: true });
+    } catch (error) {
+      // Git directory doesn't exist, no need to remove
+    }
+  } catch (error) {
+    throw error;
+  }
 }
 
 async function success() {

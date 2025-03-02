@@ -6,6 +6,7 @@ import { generateSwagger } from './swaggerGenerator.js';
 import startServer from './startServer.js';
 import chalk from 'chalk';
 import { buildApp } from './build.js';
+import os from 'os';
 
 // Set version from package.json
 program.version('0.4.0-beta', '-v, --version', 'output the current version');
@@ -22,6 +23,7 @@ program
           chalk.green(`API generated successfully for /${result.routeName}`)
         );
       }
+      process.exit(0);
     } catch (error) {
       console.error(
         chalk.red(
@@ -60,9 +62,8 @@ program
   .description('Generate Swagger/OpenAPI documentation')
   .action(async () => {
     try {
-      console.log('Generating Swagger documentation...');
       await generateSwagger();
-      console.log(chalk.green('Swagger documentation generated successfully!'));
+      process.exit(0);
     } catch (error) {
       console.error(
         chalk.red(
@@ -104,7 +105,7 @@ program
       await buildApp({
         skipComposer: options.skipComposer || false,
         verbose: options.verbose || false,
-        outputZip: options.output
+        outputZip: options.output,
       });
     } catch (error) {
       console.error(
@@ -152,4 +153,26 @@ program.parse(process.argv);
 // Show help if no arguments provided
 if (process.argv.length === 2) {
   program.help();
+}
+
+async function getIpAddressAndFreePort(): Promise<{
+  ip: string;
+  port: number;
+}> {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  let ip = '';
+  Object.keys(networkInterfaces).some(dev => {
+    networkInterfaces[dev].some((details: os.NetworkInterfaceInfo) => {
+      if (details.family === 'IPv4' && !details.internal) {
+        ip = details.address;
+        return true;
+      }
+    });
+    return Boolean(ip);
+  });
+
+  const portfinder = require('portfinder');
+  const port = await portfinder.getPortPromise();
+  return { ip, port };
 }

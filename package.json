@@ -9,9 +9,9 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "npx tsx scripts/prepare.ts && tsc -w",
-    "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outfile=dist/index.js --external commander --external dotenv --external inquirer --external knex --external pg --external mysql2 --external --external inflection --external archiver --minify",
+    "build-prod": "bun scripts/prepare.ts && bun build --target=node ./src/index.ts --outdir=dist --external commander --external dotenv --external inquirer --external knex --external pg --external mysql2 --external inflection --external archiver --minify",
     "link": "chmod +x ./dist/index.js && bun link @hmy-tech/slim-cli",
-    "link-cli": "bun unlink && bun run build-prod && chmod +x ./dist/index.js && bun link",
+    "link-cli": "bun unlink && bun run build-prod && bun link",
     "deploy": "bun run build-prod && npm publish --access public"
   },
   "keywords": [],
@@ -19,7 +19,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/archiver": "^5.3.4",
-    "@types/fs-extra": "^11.0.4",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.11.20",
     "typescript": "^5.3.3"
@@ -29,10 +28,11 @@
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
     "dotenv": "^16.4.5",
-    "fs-extra": "^11.2.0",
     "inflection": "^3.0.0",
     "inquirer": "^9.2.15",
-    "knex": "^3.1.0"
+    "knex": "^3.1.0",
+    "node-cleanup": "^2.1.2",
+    "portfinder": "^1.0.33"
   },
   "optionalDependencies": {
     "mysql2": "^3.10.2",

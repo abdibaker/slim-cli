@@ -42,13 +42,7 @@ export async function generateApi(tableNameArg: string | undefined) {
       columnsToSelect
     );
     await updateFiles(classNameLowFirst, className, routeName, primaryKey);
-
-    console.log(
-      chalk.bgGreen(`Endpoint "/${routeName}" generated successfully!`)
-    );
-
     await generateSwagger();
-
     return { success: true, routeName };
   } catch (error) {
     console.error('An error occurred:', (error as Error).message);
