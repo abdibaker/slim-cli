@@ -78,17 +78,8 @@ function readFileContent(filePath: string): string {
 const { ip, port } = await getIpAddressAndFreePort();
 
 const swagger: SwaggerSchema = {
-  openapi: '3.0.3',
-  info: {
-    title: 'Swagger',
-    version: '1.0.0',
-    description: '',
-    contact: {
-      email: 'abdibaker1@gmail.com',
-      name: '',
-      url: `http://${ip}:${port}`,
-    },
-  },
+  openapi: '3.1.1',
+  info: JSON.parse(readFileSync(`${process.cwd()}/swagger.info.json`, 'utf8')),
   servers: [{ url: `http://${ip}:${port}`, description: 'Local server' }],
   components: {
     securitySchemes: {
