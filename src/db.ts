@@ -1,76 +1,152 @@
-import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import getDataType from './helpers/getDataType.js';
-import { excludedFields, updatedAtFieldArray } from './CONST.js';
 import inflection from 'inflection';
+import knex, { Knex } from 'knex';
+import { excludedFields, updatedAtFieldArray } from './CONST.js';
+import {
+  DatabaseType,
+  getTypeInfo,
+  MysqlType,
+  PostgresType,
+} from './helpers/getDataType.js';
 
 dotenv.config();
 
 export interface Column {
-  [key: string]: {
-    type: string;
-    enum?: string[];
-    format?: string;
-    required?: boolean;
-    exclude?: boolean;
-  };
+  [key: string]: ColumnInfo;
 }
 
-export const { DB_HOST, DB_USER, DB_PASS, DB_NAME } = process.env;
+interface ColumnInfo {
+  type: string;
+  format?: string;
+  required?: boolean;
+  exclude?: boolean;
+  enum?: string[];
+}
 
-export const conn = mysql.createPool({
-  host: DB_HOST,
-  user: DB_USER,
-  password: DB_PASS,
-  database: DB_NAME,
-});
+let conn: Knex | null = null;
 
-interface Row {
-  ['key']: string;
+export function getConnection() {
+  if (conn) return conn;
+
+  const { DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_CLIENT } = process.env;
+
+  const SUPPORTED_DB_CLIENTS = ['mysql', 'postgresql'];
+
+  if (
+    DB_HOST === undefined ||
+    DB_USER === undefined ||
+    DB_PASS === undefined ||
+    DB_NAME === undefined
+  ) {
+    throw new Error('Missing environment variables');
+  }
+
+  if (!DB_CLIENT || !SUPPORTED_DB_CLIENTS.includes(DB_CLIENT)) {
+    throw new Error(`Unsupported database client: ${DB_CLIENT}`);
+  }
+
+  const DB_CLIENT_NAME = DB_CLIENT === 'postgresql' ? 'pg' : 'mysql2';
+
+  conn = knex({
+    client: DB_CLIENT_NAME,
+    connection: {
+      host: DB_HOST,
+      user: DB_USER,
+      password: DB_PASS,
+      database: DB_NAME,
+    },
+  });
+
+  return conn;
 }
 
 export async function identifyTableName(
   tableNameToIdentify: string | undefined
-) {
-  if (tableNameToIdentify === undefined) {
-    return null;
-  }
-  let tableName: string | null = null;
+): Promise<string | null> {
+  if (!tableNameToIdentify) return null;
+
+  const inflections = [
+    tableNameToIdentify,
+    inflection.tableize(tableNameToIdentify),
+    inflection.dasherize(tableNameToIdentify),
+    inflection.underscore(tableNameToIdentify),
+    inflection.camelize(tableNameToIdentify),
+    tableNameToIdentify.toLowerCase(),
+  ];
+
   try {
-    for (let i = 0; i <= 5; i++) {
-      let name = tableNameToIdentify;
-      i === 1 && (name = inflection.tableize(tableNameToIdentify));
-      i === 2 && (name = inflection.dasherize(tableNameToIdentify));
-      i === 3 && (name = inflection.underscore(tableNameToIdentify));
-      i === 4 && (name = inflection.camelize(tableNameToIdentify));
-      i === 5 && (name = tableNameToIdentify.toLowerCase());
+    const connection = getConnection();
+    const client = connection.client.config.client;
 
-      const [rows] = (await conn.query(
-        `SHOW TABLES LIKE '%${name}%'`
-      )) as unknown as [Row[]][];
-
-      if (rows && rows.length > 0) {
-        tableName = Object.values(rows[0])[0] as unknown as string;
-        break;
+    if (client === 'mysql2') {
+      for (const name of inflections) {
+        const [rows] = await connection.raw(`SHOW TABLES LIKE ?`, [
+          `%${name}%`,
+        ]);
+        if (rows && rows.length > 0) {
+          return Object.values(rows[0])[0] as string;
+        }
       }
+    } else if (client === 'pg') {
+      for (const name of inflections) {
+        const { rows } = await connection.raw(
+          `
+          SELECT table_name
+          FROM information_schema.tables
+          WHERE table_schema = ?
+            AND table_name ILIKE ?
+          LIMIT 1
+        `,
+          [process.env.DB_SCHEMA || 'public', `%${name}%`]
+        );
+
+        if (rows && rows.length > 0) {
+          return rows[0].table_name;
+        }
+      }
+    } else {
+      throw new Error(`Unsupported database client: ${client}`);
     }
 
-    return tableName;
+    return null;
   } catch (error) {
-    throw new Error(
-      `Error identifying table name: ${(error as Error).message}`
-    );
+    console.error('Error identifying table name:', error);
+    throw error;
   }
 }
 
-export async function fetchPrimaryKey(tableName: string) {
+export async function fetchPrimaryKey(tableName: string): Promise<string> {
   try {
-    const [rows] = (await conn.query(
-      `SHOW KEYS FROM \`${tableName}\` WHERE Key_name = "PRIMARY"`
-    )) as any;
-    return rows.length > 0 ? rows[0].Column_name : 'id';
+    const connection = getConnection();
+    const client = connection.client.config.client;
+
+    if (client === 'mysql2') {
+      const [rows] = await connection.raw(
+        `SHOW KEYS FROM ?? WHERE Key_name = 'PRIMARY'`,
+        [tableName]
+      );
+      return rows.length > 0 ? rows[0].Column_name : 'id';
+    } else if (client === 'pg') {
+      const { rows } = await connection.raw(
+        `
+          SELECT a.attname
+          FROM   pg_index i
+          JOIN   pg_attribute a ON a.attrelid = i.indrelid
+                              AND a.attnum = ANY(i.indkey)
+          JOIN   pg_class c ON c.oid = i.indrelid
+          JOIN   pg_namespace n ON n.oid = c.relnamespace
+          WHERE  c.relname = ?  -- Table name
+          AND    n.nspname = ?  -- Schema name
+          AND    i.indisprimary;
+      `,
+        [tableName, process.env.DB_SCHEMA || 'public']
+      );
+      return rows.length > 0 ? rows[0].attname : 'id';
+    } else {
+      throw new Error(`Unsupported database client: ${client}`);
+    }
   } catch (error) {
-    throw error;
+    return '';
   }
 }
 
@@ -81,54 +157,149 @@ export async function fetchPrimaryKeyType(
   if (!tableName) {
     return { type: 'integer' };
   }
-  try {
-    const [rows] = (await conn.query(`DESCRIBE \`${tableName}\``)) as any;
-    const primaryKeyRow = rows.find((row: any) => row.Field === primaryKey);
-    const primaryKeyType = primaryKeyRow
-      ? getDataType(primaryKeyRow.Type)
-      : { type: 'integer' };
 
-    return primaryKeyType;
+  try {
+    const connection = getConnection();
+    const client = connection.client.config.client;
+    const dbType: DatabaseType = client === 'mysql2' ? 'mysql' : 'postgresql';
+
+    let primaryKeyInfo;
+
+    if (dbType === 'mysql') {
+      const [rows] = await connection.raw(
+        `
+        SELECT DATA_TYPE, COLUMN_TYPE
+        FROM information_schema.columns
+        WHERE table_name = ? AND column_name = ?
+      `,
+        [tableName, primaryKey]
+      );
+      primaryKeyInfo = rows[0];
+    } else if (dbType === 'postgresql') {
+      const { rows } = await connection.raw(
+        `
+        SELECT data_type, udt_name
+        FROM information_schema.columns
+        WHERE table_schema = ?
+          AND table_name = ?
+          AND column_name = ?;
+      `,
+        [process.env.DB_SCHEMA || 'public', tableName, primaryKey]
+      );
+      primaryKeyInfo = rows[0];
+    } else {
+      throw new Error(`Unsupported database client: ${client}`);
+    }
+
+    if (primaryKeyInfo) {
+      return getTypeInfo(
+        dbType,
+        primaryKeyInfo.data_type as MysqlType | PostgresType,
+        primaryKeyInfo.column_type || '', // This will be empty for PostgreSQL
+        primaryKeyInfo.udt_name || '' // This will be empty for MySQL
+      );
+    } else {
+      return { type: 'integer' }; // Default to integer if primary key not found
+    }
   } catch (error) {
+    console.error('Error fetching primary key type:', error);
     throw error;
   }
 }
 
 export async function fetchAllColumns(tableName: string) {
   try {
-    const [rows] = (await conn.query(
-      `SHOW COLUMNS FROM \`${tableName}\``
-    )) as unknown as [Column[]];
+    const connection = getConnection();
+    const client = connection.client.config.client;
+    let rows: any[] | undefined;
+    let primaryKeyIsAutoIncrement = false;
+    const dbType: DatabaseType = client === 'mysql2' ? 'mysql' : 'postgresql';
 
-    const primaryKeyIsAutoIncrement = !!rows.find(
-      (row: any) => row.Key === 'PRI' && row.Extra === 'auto_increment'
+    if (client === 'mysql2') {
+      [rows] = await connection.raw(`SHOW COLUMNS FROM ??`, [tableName]);
+      primaryKeyIsAutoIncrement = !!rows?.find(
+        (row: any) => row.Key === 'PRI' && row.Extra === 'auto_increment'
+      );
+    } else if (client === 'pg') {
+      const result = await connection.raw(
+        `
+          SELECT
+            columns.column_name AS "Field",
+            columns.data_type AS "Type",
+            columns.is_nullable AS "Null",
+            columns.column_default AS "Default",
+            CASE
+              WHEN pk.constraint_type = 'PRIMARY KEY' THEN 'PRI'
+              ELSE ''
+            END AS "Key",
+            CASE
+              WHEN columns.column_default LIKE 'nextval%' THEN 'auto_increment'
+              ELSE ''
+            END AS "Extra"
+          FROM
+            information_schema.columns AS columns
+            LEFT JOIN (
+              SELECT
+                kcu.column_name,
+                tc.constraint_type
+              FROM
+                information_schema.table_constraints AS tc
+                JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+              WHERE
+                tc.table_name = :tableName
+                AND tc.constraint_type = 'PRIMARY KEY'
+            ) AS pk ON columns.column_name = pk.column_name
+          WHERE
+            columns.table_name = :tableName
+            AND columns.table_schema = :schema;
+      `,
+        { tableName, schema: process?.env.DB_SCHEMA || 'public' }
+      );
+
+      rows = result.rows;
+      primaryKeyIsAutoIncrement = !!rows?.find(
+        (row: any) => row.Key === 'PRI' && row.Extra === 'auto_increment'
+      );
+    } else {
+      throw new Error(`Unsupported database client: ${client}`);
+    }
+
+    const columns: { [key: string]: ColumnInfo } = rows?.reduce(
+      (acc, row: any) => {
+        const typeInfo = getTypeInfo(
+          dbType,
+          row.Type as MysqlType | PostgresType,
+          row.Type,
+          row.udt_name
+        );
+
+        acc[row.Field] = {
+          ...typeInfo,
+          required: row.Default === null && row.Null === 'NO',
+          exclude:
+            row.Extra === 'auto_increment' || row.Extra === 'DEFAULT_GENERATED',
+        };
+        return acc;
+      },
+      {} as { [key: string]: ColumnInfo }
     );
 
-    const columns = rows.reduce((acc, row: any) => {
-      acc[row.Field] = {
-        ...getDataType(row.Type),
-        enum: row.Type.match(/'([^']+)'/g)?.map((value: string) =>
-          value.replace(/'/g, '')
-        ),
-        format: row.Type.includes('datetime') ? 'date-time' : undefined,
-        required: row.Default === null && row.Null === 'NO',
-        exclude:
-          row.Extra === 'auto_increment' || row.Extra === 'DEFAULT_GENERATED',
-      };
-      return acc;
-    }, {});
-
     const updatedAtField = Object.entries(columns).find(
-      ([key, value]) =>
+      ([key, value]: [string, ColumnInfo]) =>
         updatedAtFieldArray.includes(key) && value.format === 'date-time'
     )?.[0];
 
-    const columnsForSelection = rows.reduce((acc, row: any) => {
+    const columnsForSelection = rows?.reduce((acc, row: any) => {
       if (
         row.Extra !== 'DEFAULT_GENERATED' &&
         !excludedFields.includes(row.Field)
       ) {
-        acc[row.Field] = getDataType(row.Type);
+        acc[row.Field] = getTypeInfo(
+          dbType,
+          row.Type as MysqlType | PostgresType,
+          row.Type,
+          row.udt_name
+        );
       }
       return acc;
     }, {});
@@ -146,10 +317,11 @@ export async function fetchAllColumns(tableName: string) {
     const insertDto = Object.assign({}, filteredColumns);
     const updateDto = Object.assign({}, filteredColumns);
 
-    if ((await fetchPrimaryKey(tableName)) && primaryKeyIsAutoIncrement) {
-      delete insertDto[await fetchPrimaryKey(tableName)];
+    const primaryKey = await fetchPrimaryKey(tableName);
+    if (primaryKey && primaryKeyIsAutoIncrement) {
+      delete insertDto[primaryKey];
     }
-    delete updateDto[await fetchPrimaryKey(tableName)];
+    delete updateDto[primaryKey];
 
     const phpDto = transformToPHPDto(insertDto);
     const phpUpdateDto = transformToPHPUpdateDto(updateDto, updatedAtField);
@@ -157,7 +329,7 @@ export async function fetchAllColumns(tableName: string) {
     delete insertDto.status;
 
     if (primaryKeyIsAutoIncrement) {
-      delete insertDto[await fetchPrimaryKey(tableName)];
+      delete insertDto[primaryKey];
     }
 
     return {

@@ -1,4 +1,4 @@
-import { emptyDirSync, copy } from 'fs-extra';
+import { rm, cp } from 'fs/promises';
 
-emptyDirSync('./dist');
-copy('./templates', './dist/templates');
+await rm('./dist', { recursive: true, force: true });
+await cp('./templates', './dist/templates', { recursive: true });

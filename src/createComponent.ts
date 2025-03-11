@@ -39,7 +39,8 @@ export async function createComponent(
   } else {
     const templateContent = await readFile(templatePath, 'utf-8');
     const replacedContent = replaceTemplatePlaceholders(templateContent, {
-      tableName,
+      tableName:
+        (process.env.DB_SCHEMA ? process.env.DB_SCHEMA + '.' : '') + tableName,
       primaryKey: primaryKey,
       primaryKeyType: primaryKeyType.type === 'integer' ? 'int' : 'string',
       className,

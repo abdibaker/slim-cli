@@ -1,9 +1,12 @@
+import chalk from 'chalk';
 import { readFileSync, writeFileSync } from 'fs';
-import { ROUTES_FILE } from './CONST.js';
-import { generateDtoSchema } from './generateDtoSchema.js';
 import inflection from 'inflection';
-import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
+import path from 'path';
+import { ROUTES_FILE, SRC_DIR } from './CONST.js';
 import { fetchPrimaryKeyType, identifyTableName } from './db.js';
+import { generateDtoSchema } from './generateDtoSchema.js';
+import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
+import getIpAddressAndFreePort from './utils/getIpAndFreePort.js';
 
 interface SwaggerPathParameters {
   name: string;
@@ -73,23 +76,29 @@ function readFileContent(filePath: string): string {
   return readFileSync(filePath, 'utf8');
 }
 
-const { SERVE_HOST, SERVE_PORT } = process.env;
+const { ip, port } = await getIpAddressAndFreePort();
 
 const swagger: SwaggerSchema = {
-  openapi: '3.0.3',
-  info: {
-    title: 'Swagger',
-    version: '1.0.0',
-    description: '',
-    contact: {
-      email: 'abdibaker1@gmail.com',
-      name: '',
-      url: `http://${SERVE_HOST}:${SERVE_PORT}`,
-    },
-  },
-  servers: [
-    { url: `http://${SERVE_HOST}:${SERVE_PORT}`, description: 'Local server' },
-  ],
+  openapi: '3.1.1',
+  info: (() => {
+    try {
+      return JSON.parse(
+        readFileSync(`${process.cwd()}/swagger.info.json`, 'utf8')
+      );
+    } catch (error) {
+      return {
+        title: 'API Documentation',
+        version: '1.0.0',
+        description: 'API Documentation',
+        contact: {
+          email: '',
+          name: '',
+          url: '',
+        },
+      };
+    }
+  })(),
+  servers: [{ url: `http://${ip}:${port}`, description: 'Local server' }],
   components: {
     securitySchemes: {
       bearerAuth: {
@@ -112,6 +121,112 @@ const swagger: SwaggerSchema = {
   paths: {},
 };
 
+/**
+ * Extracts query parameters from a controller function.
+ * Looks for patterns like $request->getQueryParams()['paramName']
+ * @param controllerName The name of the controller file
+ * @param functionName The name of the function to analyze
+ * @returns Array of query parameter objects for Swagger
+ */
+async function extractQueryParams(
+  controllerName: string,
+  functionName: string
+): Promise<SwaggerPathParameters[]> {
+  try {
+    // Ensure both parameters are defined before proceeding
+    if (!controllerName || !functionName) {
+      return [];
+    }
+
+    // Read the controller file
+    const controllerPath = path.join(
+      SRC_DIR,
+      'Controller',
+      `${inflection.classify(
+        controllerName.replace('.php', '').replace('Controller', '')
+      )}Controller.php`
+    );
+
+    let phpCode = '';
+    try {
+      phpCode = readFileSync(controllerPath, 'utf8');
+    } catch (err) {
+      // If we can't read the file, return empty array
+      return [];
+    }
+
+    // Extract the function content - use a more flexible regex pattern
+    // This pattern looks for a function with the given name and captures everything until the closing brace
+    // It handles nested braces properly by counting them
+    let functionContent = '';
+    const functionStartRegex = new RegExp(
+      `public\\s+function\\s+${functionName}\\s*\\([^{]*\\{`,
+      'i'
+    );
+    const startMatch = functionStartRegex.exec(phpCode);
+
+    if (startMatch) {
+      // Found the start of the function
+      const startIndex = startMatch.index;
+      let braceCount = 1; // We've already found the opening brace
+      let currentIndex = startIndex + startMatch[0].length;
+
+      // Find the matching closing brace by counting braces
+      while (braceCount > 0 && currentIndex < phpCode.length) {
+        const char = phpCode[currentIndex];
+        if (char === '{') braceCount++;
+        if (char === '}') braceCount--;
+        currentIndex++;
+      }
+
+      // Extract the full function content including the signature
+      if (braceCount === 0) {
+        functionContent = phpCode.substring(startIndex, currentIndex);
+      }
+    }
+
+    if (!functionContent) {
+      return [];
+    }
+
+    // Look for query parameter patterns
+    const queryParamRegex = /\$request->getQueryParams\(\)\[['"](\w+)['"]\]/g;
+    const queryParams: SwaggerPathParameters[] = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = queryParamRegex.exec(functionContent)) !== null) {
+      // Ensure we have a capture group match
+      if (match && match[1]) {
+        const paramName = match[1];
+
+        // Check if this parameter is already in the array
+        if (!queryParams.some(param => param.name === paramName)) {
+          queryParams.push({
+            name: paramName,
+            in: 'query',
+            required: false, // Query params are typically optional
+            schema: { type: 'string' }, // Default to string type
+          });
+        }
+      }
+    }
+
+    return queryParams;
+  } catch (error) {
+    // Silently return empty array instead of logging errors
+    // This prevents console spam when files don't exist
+    return [];
+  }
+}
+
+/**
+ * Generates Swagger/OpenAPI documentation by parsing route definitions
+ * from the specified routes file. Each route is processed to extract
+ * HTTP method, path, controller, and action. Parameters and request
+ * bodies are determined for dynamic paths and appropriate schemas are
+ * generated. The resulting Swagger documentation is written to a JSON
+ * file for API documentation purposes.
+ */
 export async function generateSwagger() {
   const routeContent: string = readFileContent(ROUTES_FILE);
 
@@ -183,6 +298,17 @@ export async function generateSwagger() {
           return;
         }
 
+        // Extract query parameters from the controller function
+        const queryParams = await extractQueryParams(
+          controller || '',
+          action || ''
+        );
+
+        // Merge path parameters and query parameters
+        if (queryParams.length > 0) {
+          parameters = [...parameters, ...queryParams];
+        }
+
         const routeObj = {
           path: `/${kebabCaseClassName(tag)}${path}`,
           method,
@@ -240,14 +366,12 @@ export async function generateSwagger() {
       });
       await Promise.all(routeProcessing);
     }
-
     writeFileSync(
       'public/swagger/swagger.json',
       JSON.stringify(swagger, null, 2)
     );
-    process.exit(0);
   } catch (error) {
-    console.error('An error occurred:', (error as Error).message);
+    console.error(chalk.red(`An error occurred: ${(error as Error).message}`));
     process.exit(1);
   }
 }

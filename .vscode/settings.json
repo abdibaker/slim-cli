@@ -1,8 +1,14 @@
 {
   "cSpell.words": [
+    "attname",
+    "attnum",
+    "attrelid",
     "dasherize",
     "datetime",
-    "nanospinner",
+    "indisprimary",
+    "indkey",
+    "indrelid",
+    "regclass",
     "tableize",
     "tinyint"
   ]

@@ -1,34 +1,30 @@
-export default function startServer(): void {
-  const { SERVE_HOST, SERVE_PORT } = process.env;
-  const { spawn } = require('child_process');
+import { generateSwagger } from './swaggerGenerator.js';
+import { execSync } from 'child_process';
+import getIpAddressAndFreePort from './utils/getIpAndFreePort.js';
+import chalk from 'chalk';
 
-  const server = spawn('php', [
-    '-S',
-    `${SERVE_HOST}:${SERVE_PORT}`,
-    '-t',
-    'public',
-    'public/index.php',
-  ]);
+export default async function startServer() {
+  const { ip, port } = await getIpAddressAndFreePort();
 
-  server.stdout.on('data', (data: Buffer) => {
-    const output = data.toString();
-    if (
-      output.toLowerCase().includes('error') ||
-      output.toLowerCase().includes('warning')
-    ) {
-      console.log(`Server output: ${output}`);
-    }
-  });
+  await generateSwagger();
 
-  server.stderr.on('data', (data: Buffer) => {
-    console.error(`Server error: ${data.toString()}`);
-  });
+  console.log(
+    chalk.green('[Info]') +
+      ` PHP Development server started at ${chalk.cyan(`http://${ip}:${port}`)}`
+  );
+  console.log(
+    chalk.green('[Info]') +
+      ' Press ' +
+      chalk.yellow('Ctrl+C') +
+      ' to stop the server'
+  );
 
-  server.on('close', (code: number) => {
-    if (code !== 0) {
-      console.log(`Server exited with code ${code}`);
-    }
-  });
-
-  console.log(`PHP server started at http://${SERVE_HOST}:${SERVE_PORT}`);
+  try {
+    execSync(`php -S ${ip}:${port} -t public public/local.php`, {
+      stdio: 'inherit',
+    });
+  } catch (error) {
+    console.error(chalk.red('[Error]') + ' Failed to start PHP server:', error);
+    process.exit(1);
+  }
 }

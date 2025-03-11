@@ -16,7 +16,7 @@ final class {{className}}Service
   {
     return $this->conn->fetchAllAssociative(
       'SELECT {{columnsToSelect}}
-       FROM `{{tableName}}`
+       FROM {{tableName}}
        ORDER BY {{primaryKey}} ASC'
     );
   }
@@ -26,7 +26,7 @@ final class {{className}}Service
   {
     $result = $this->conn->fetchAssociative(
       'SELECT {{columnsToSelect}} 
-       FROM `{{tableName}}` 
+       FROM {{tableName}} 
        WHERE {{primaryKey}} = ?',
        [${{primaryKey}}]
     );
