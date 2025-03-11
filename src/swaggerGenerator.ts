@@ -79,7 +79,24 @@ const { ip, port } = await getIpAddressAndFreePort();
 
 const swagger: SwaggerSchema = {
   openapi: '3.1.1',
-  info: JSON.parse(readFileSync(`${process.cwd()}/swagger.info.json`, 'utf8')),
+  info: (() => {
+    try {
+      return JSON.parse(
+        readFileSync(`${process.cwd()}/swagger.info.json`, 'utf8')
+      );
+    } catch (error) {
+      return {
+        title: 'API Documentation',
+        version: '1.0.0',
+        description: 'API Documentation',
+        contact: {
+          email: '',
+          name: '',
+          url: '',
+        },
+      };
+    }
+  })(),
   servers: [{ url: `http://${ip}:${port}`, description: 'Local server' }],
   components: {
     securitySchemes: {
