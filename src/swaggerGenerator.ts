@@ -190,10 +190,15 @@ async function extractQueryParams(
     }
 
     // Look for query parameter patterns
+    // First pattern: $request->getQueryParams()['paramName']
     const queryParamRegex = /\$request->getQueryParams\(\)\[['"](\w+)['"]\]/g;
+    // Second pattern: $params['paramName']
+    const paramsRegex = /\$params\[['"](\w+)['"]\]/g;
+
     const queryParams: SwaggerPathParameters[] = [];
     let match: RegExpExecArray | null;
 
+    // Process the first pattern (request->getQueryParams)
     while ((match = queryParamRegex.exec(functionContent)) !== null) {
       // Ensure we have a capture group match
       if (match && match[1]) {
@@ -206,6 +211,24 @@ async function extractQueryParams(
             in: 'query',
             required: false, // Query params are typically optional
             schema: { type: 'string' }, // Default to string type
+          });
+        }
+      }
+    }
+
+    // Process the second pattern ($params)
+    while ((match = paramsRegex.exec(functionContent)) !== null) {
+      // Ensure we have a capture group match
+      if (match && match[1]) {
+        const paramName = match[1];
+
+        // Check if this parameter is already in the array
+        if (!queryParams.some(param => param.name === paramName)) {
+          queryParams.push({
+            name: paramName,
+            in: 'query',
+            required: false,
+            schema: { type: 'string' },
           });
         }
       }
