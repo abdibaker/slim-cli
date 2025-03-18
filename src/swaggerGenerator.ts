@@ -267,16 +267,15 @@ export async function generateSwagger() {
         let path: string = (route.match(/'\S*'/) as RegExpMatchArray)[0];
         path = path.substring(1, path.length - 1);
 
+        if (!method) {
+          return;
+        }
         if (
           path === '/' ||
           path === '/api' ||
           path === '/status' ||
           path === '/swagger-ui'
         ) {
-          return;
-        }
-
-        if (!method) {
           return;
         }
 
@@ -302,6 +301,10 @@ export async function generateSwagger() {
 
         const matches: RegExpMatchArray | null = path.match(/{[^}]+}/g);
 
+        if (!tag) {
+          return;
+        }
+
         if (matches) {
           const tableName = await identifyTableName(tag);
           parameters = await Promise.all(
@@ -315,10 +318,6 @@ export async function generateSwagger() {
               ),
             }))
           );
-        }
-
-        if (!tag) {
-          return;
         }
 
         // Extract query parameters from the controller function
