@@ -133,11 +133,6 @@ async function extractQueryParams(
   functionName: string
 ): Promise<SwaggerPathParameters[]> {
   try {
-    // Ensure both parameters are defined before proceeding
-    if (!controllerName || !functionName) {
-      return [];
-    }
-
     // Read the controller file
     const controllerPath = path.join(
       SRC_DIR,
@@ -269,8 +264,6 @@ export async function generateSwagger() {
               .replace('App\\Controller\\', '')
               .concat('.php')
           : '';
-
-        const service = controller?.replace('Controller', 'Service');
 
         let parameters: SwaggerPathParameters[] = [];
 
