@@ -129,15 +129,12 @@ export async function generateSwagger() {
         path = path.substring(1, path.length - 1);
 
         if (
+          !method ||
           path === '/' ||
           path === '/api' ||
           path === '/status' ||
           path === '/swagger-ui'
         ) {
-          return;
-        }
-
-        if (!method) {
           return;
         }
 
