@@ -242,6 +242,17 @@ async function extractQueryParams(
   }
 }
 
+async function extractReturnedData(
+  controllerName: string,
+  functionName: string
+): Promise<SwaggerPathResponses> {
+  return {
+    200: {
+      description: 'OK',
+    },
+  };
+}
+
 /**
  * Generates Swagger/OpenAPI documentation by parsing route definitions
  * from the specified routes file. Each route is processed to extract

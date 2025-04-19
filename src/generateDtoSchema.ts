@@ -41,22 +41,32 @@ function extractColumnsFromCode(code: string, functionName: string): string[] {
     .find(e => e.startsWith(`${functionName}`));
 
   if (workingOnFunction) {
-    workingOnFunction
-      ?.split('$dto')[1]
-      ?.split('];')[0]
-      ?.concat(']')
-      .replace(/=/g, '')
-      .split('$input')
-      .join('')
-      .replace(/\]/g, '')
-      .split(',')
-      .forEach(v => {
-        const row = v.replace(/\[/g, '')?.split('>');
-        if (!(row[1]?.trim().startsWith("'") || row[1]?.trim().startsWith('"')))
-          return;
-        const key = row[0]?.trim();
-        if (key) columns.push(key);
-      });
+    // First try to find array_filter pattern
+    let dtoDef = workingOnFunction.match(
+      /\$dto\s*=\s*array_filter\s*\(\s*(\[[\s\S]*?\])\s*,\s*fn\s*\(\$value\)\s*=>\s*!is_null\s*\(\$value\)\)/
+    );
+
+    // If array_filter pattern not found, try regular array pattern
+    if (!dtoDef) {
+      dtoDef = workingOnFunction.match(/\$dto\s*=\s*(\[[\s\S]*?\]);/);
+    }
+
+    if (dtoDef && dtoDef[1]) {
+      // Extract the array content
+      let arrayContent = dtoDef[1].replace(/\/\/.*$/gm, ''); // Remove inline comments
+
+      // Process the array entries
+      const arrayLines = arrayContent.split('\n');
+
+      for (const line of arrayLines) {
+        // Match array key-value pairs with either single or double quotes
+        const keyMatch = line.match(/['"](.*?)['"](?:\s*=>\s*|\s*$)/);
+        if (keyMatch && keyMatch[1]) {
+          // Use single quotes for all column names
+          columns.push(`'${keyMatch[1].replace(/'/g, '')}'`);
+        }
+      }
+    }
   }
 
   return columns;

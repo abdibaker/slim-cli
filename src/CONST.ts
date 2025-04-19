@@ -1,5 +1,5 @@
 import path from 'path';
-
+import inflection from 'inflection';
 export const PUBLIC_DIR = path.join(process.cwd(), 'public');
 export const SRC_DIR = path.join(process.cwd(), 'src');
 export const TEMPLATE_PATH = path.join(
@@ -9,7 +9,24 @@ export const TEMPLATE_PATH = path.join(
 export const ROUTES_FILE = path.join(SRC_DIR, 'App', 'Routes.php');
 export const SERVICES_FILE = path.join(SRC_DIR, 'App', 'Services.php');
 export const SWAGGER_FILE = path.join(PUBLIC_DIR, 'swagger', 'swagger.json');
-
+export const SERVICES_DIR = path.join(SRC_DIR, 'Service');
+export const CONTROLLERS_DIR = path.join(SRC_DIR, 'Controller');
+export function getServicePath(controllerName: string) {
+  return path.join(
+    SERVICES_DIR,
+    `${inflection.classify(
+      controllerName.replace('.php', '').replace('Controller', '')
+    )}Service.php`
+  );
+}
+export function getControllerPath(controllerName: string) {
+  return path.join(
+    CONTROLLERS_DIR,
+    `${inflection.classify(
+      controllerName.replace('.php', '').replace('Controller', '')
+    )}Controller.php`
+  );
+}
 export const excludedFields = [
   'create_at',
   'create_date',
