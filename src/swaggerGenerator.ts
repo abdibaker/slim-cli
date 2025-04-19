@@ -2,7 +2,13 @@ import chalk from 'chalk';
 import { readFileSync, writeFileSync } from 'fs';
 import inflection from 'inflection';
 import path from 'path';
-import { ROUTES_FILE, SRC_DIR } from './CONST.js';
+import {
+  ROUTES_FILE,
+  SRC_DIR,
+  SERVICES_FILE,
+  getServicePath,
+  getControllerPath,
+} from './CONST.js';
 import { fetchPrimaryKeyType, identifyTableName } from './db.js';
 import { generateDtoSchema } from './generateDtoSchema.js';
 import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
@@ -72,6 +78,25 @@ interface SwaggerSchema {
   paths: SwaggerPaths;
 }
 
+interface ResponseSchema {
+  type: string;
+  properties?: {
+    [propertyName: string]: {
+      type: string;
+      description?: string;
+    };
+  };
+  items?: {
+    type: string;
+    properties?: {
+      [propertyName: string]: {
+        type: string;
+        description?: string;
+      };
+    };
+  };
+}
+
 function readFileContent(filePath: string): string {
   return readFileSync(filePath, 'utf8');
 }
@@ -139,13 +164,7 @@ async function extractQueryParams(
     }
 
     // Read the controller file
-    const controllerPath = path.join(
-      SRC_DIR,
-      'Controller',
-      `${inflection.classify(
-        controllerName.replace('.php', '').replace('Controller', '')
-      )}Controller.php`
-    );
+    const controllerPath = getControllerPath(controllerName);
 
     let phpCode = '';
     try {
@@ -242,15 +261,156 @@ async function extractQueryParams(
   }
 }
 
+/**
+ * Extracts the returned data from a controller function and returns a Swagger response schema.
+ * @param controllerName The name of the controller file
+ * @param functionName The name of the function to analyze
+ * @returns A Swagger response schema object
+ */
 async function extractReturnedData(
   controllerName: string,
   functionName: string
 ): Promise<SwaggerPathResponses> {
-  return {
-    200: {
-      description: 'OK',
-    },
-  };
+  try {
+    // Get the service file path
+    const servicePath = getServicePath(controllerName);
+
+    // Read the service file
+    let phpCode = '';
+    try {
+      phpCode = readFileSync(servicePath, 'utf8');
+    } catch (err) {
+      return {
+        200: {
+          description: 'Read the service file error',
+        },
+      };
+    }
+
+    // Extract the function content
+    let functionContent = '';
+    const functionStartRegex = new RegExp(
+      `public\\s+function\\s+${functionName}\\s*\\([^{]*\\{`,
+      'i'
+    );
+    const startMatch = functionStartRegex.exec(phpCode);
+
+    if (startMatch) {
+      const startIndex = startMatch.index;
+      let braceCount = 1;
+      let currentIndex = startIndex + startMatch[0].length;
+
+      while (braceCount > 0 && currentIndex < phpCode.length) {
+        const char = phpCode[currentIndex];
+        if (char === '{') braceCount++;
+        if (char === '}') braceCount--;
+        currentIndex++;
+      }
+
+      if (braceCount === 0) {
+        functionContent = phpCode.substring(startIndex, currentIndex);
+      }
+    }
+
+    if (!functionContent) {
+      return {
+        200: {
+          description: 'Extract the function content error',
+        },
+      };
+    }
+
+    // Look for SQL queries
+    const sqlRegex = /<<<SQL\s*\n([\s\S]*?)\n\s*SQL\s*;/g;
+    const sqlMatches = functionContent.match(sqlRegex);
+
+    // Debug logging
+    console.log('Function Content:', functionContent);
+    console.log('SQL Matches:', sqlMatches);
+
+    if (!sqlMatches) {
+      return {
+        200: {
+          description: 'No SQL queries found',
+        },
+      };
+    }
+
+    // Analyze the SQL query to determine the response structure
+    const sqlQuery = sqlMatches[0].replace(/<<<SQL\s*\n|SQL\s*;/g, '');
+
+    // Check if it's a single row or multiple rows query based on database methods
+    const isSingleRow =
+      functionContent.includes('fetchAssociative') ||
+      functionContent.includes('fetchOne') ||
+      functionContent.includes('fetchAssoc');
+
+    // Extract column names from SELECT statements
+    const selectRegex = /SELECT\s+([\s\S]*?)\s+FROM/i;
+    const selectMatch = sqlQuery.match(selectRegex);
+
+    if (!selectMatch || !selectMatch[1]) {
+      return {
+        200: {
+          description: 'No SELECT statement found',
+        },
+      };
+    }
+
+    const columns = selectMatch[1]
+      .split(',')
+      .map(col => col.trim())
+      .map(col => {
+        // Handle aliased columns
+        const aliasMatch = col.match(/AS\s+`?(\w+)`?$/i);
+        return aliasMatch ? aliasMatch[1] : col.replace(/`/g, '');
+      });
+
+    // Create column properties
+    const columnProperties: {
+      [key: string]: { type: string; description: string };
+    } = {};
+    for (const column of columns) {
+      columnProperties[column as string] = {
+        type: 'string',
+        description: `The ${column} field`,
+      };
+    }
+
+    // Create the response schema based on query type
+    const responseSchema: ResponseSchema = isSingleRow
+      ? {
+          type: 'object',
+          properties: columnProperties,
+        }
+      : {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: columnProperties,
+          },
+        };
+
+    return {
+      200: {
+        description: isSingleRow
+          ? 'Single object response'
+          : 'Array of objects response',
+        content: {
+          'application/json': {
+            schema: responseSchema,
+          },
+        },
+      },
+    };
+  } catch (error) {
+    // Return default response on error
+    return {
+      200: {
+        description: 'Extract the returned data error',
+      },
+    };
+  }
 }
 
 /**
@@ -356,19 +516,23 @@ export async function generateSwagger() {
         }
 
         if (routeObj.method === 'get') {
+          const responses = await extractReturnedData(
+            controller || '',
+            action || ''
+          );
           swagger.paths[routeObj.path]![routeObj.method] = {
             tags: [routeObj.tag],
             parameters: parameters,
-            responses: {
-              200: {
-                description: 'OK',
-              },
-            },
+            responses: responses,
           };
         } else {
           const requestBodySchema = await generateDtoSchema(
             controller!,
             routeObj.action!
+          );
+          const responses = await extractReturnedData(
+            controller || '',
+            action || ''
           );
           const requestBody = {
             content: {
@@ -385,11 +549,7 @@ export async function generateSwagger() {
               routeObj.method === 'post' || routeObj.method === 'put'
                 ? requestBody
                 : undefined,
-            responses: {
-              200: {
-                description: 'OK',
-              },
-            },
+            responses: responses,
           };
         }
 

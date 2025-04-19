@@ -26,7 +26,7 @@ final class {{className}}Controller
       $result = $this->{{classNameLowFirst}}Service->getAll();
       return $response->withJson($result);
     } catch (Exception $e) {
-      return $response->withJson(['error' => $e->getMessage()], 500);
+      return Helper::handleError($e, $response);
     }
   }
 
@@ -36,7 +36,7 @@ final class {{className}}Controller
       $result = $this->{{classNameLowFirst}}Service->getOne(({{primaryKeyType}}) $args['{{primaryKey}}']);
       return $response->withJson($result);
     } catch (Exception $e) {
-      return $response->withJson(['error' => $e->getMessage()], 404);
+      return Helper::handleError($e, $response);
     }
   }
 
@@ -54,17 +54,7 @@ final class {{className}}Controller
       $this->{{classNameLowFirst}}Service->create($dto);
       return $response->withStatus(201);
     } catch (Exception $e) {
-      $duplicateErrorCode = 1062;
-      $foreignErrorCode = 1452;
-
-      if ($e->getCode() === $duplicateErrorCode) {
-        return $response->withJson(['error' => 'The data you try to insert already exists'], 409);
-      } else if ($e->getCode() === $foreignErrorCode) {
-       $error = Helper::getForeignKeyErrorMessage($e->getMessage());
-        return $response->withJson(['error' => $error], 404);
-      } else {
-        return $response->withJson(['error' => $e->getMessage()], 500);
-      }
+      return Helper::handleError($e, $response);
     }
   }
 
@@ -82,7 +72,7 @@ final class {{className}}Controller
       $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dto);
       return $response->withStatus(204);
     } catch (Exception $e) {
-      return $response->withJson(['error' => $e->getMessage()], 500);
+      return Helper::handleError($e, $response);
     }
   }
 
@@ -92,7 +82,7 @@ final class {{className}}Controller
      $result = $this->{{classNameLowFirst}}Service->delete(({{primaryKeyType}}) $args['{{primaryKey}}']);
      return $response->withJson($result);
    } catch (Exception $e) {
-     return $response->withJson(['error' => $e->getMessage()], 400);
+     return Helper::handleError($e, $response);
    }
   }
 
