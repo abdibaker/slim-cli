@@ -45,11 +45,7 @@ final class {{className}}Controller
     try {
       $input = $request->getParsedBody();
 
-      $dto = [
-        {{phpDto}}
-      ];
-
-      $dto = array_filter($dto, fn($value) => $value !== null);
+      $dto = Helper::filterDtoFields($input, {{phpDto}});
 
       $this->{{classNameLowFirst}}Service->create($dto);
       return $response->withStatus(201);
@@ -63,11 +59,7 @@ final class {{className}}Controller
     try {
       $input = $request->getParsedBody();
 
-      $dto = [
-        {{phpUpdateDto}}
-      ];
-
-      $dto = array_filter($dto, fn($value) => $value !== null);
+      $dto = Helper::filterDtoFields($input, {{phpUpdateDto}});
 
       $this->{{classNameLowFirst}}Service->update(({{primaryKeyType}}) $args['{{primaryKey}}'], $dto);
       return $response->withStatus(204);
