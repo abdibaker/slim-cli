@@ -14,28 +14,32 @@ final class {{className}}Service
   }
   public function getAll(): array
   {
-    return $this->conn->fetchAllAssociative(
-      'SELECT {{columnsToSelect}}
-       FROM {{tableName}}
-       ORDER BY {{primaryKey}} ASC'
-    );
+    $query = <<<SQL
+      SELECT {{columnsToSelect}}
+      FROM {{tableName}}
+      ORDER BY {{primaryKey}} ASC
+    SQL;
+
+    return $this->conn->fetchAllAssociative($query);
   }
 
 
   public function getOne({{primaryKeyType}} ${{primaryKey}}): array
   {
-    $result = $this->conn->fetchAssociative(
-      'SELECT {{columnsToSelect}} 
-       FROM {{tableName}} 
-       WHERE {{primaryKey}} = ?',
-       [${{primaryKey}}]
-    );
+    $query = <<<SQL
+      SELECT {{columnsToSelect}}
+      FROM {{tableName}}
+      WHERE {{primaryKey}} = ?
+    SQL;
+
+    $result = $this->conn->fetchAssociative($query, [${{primaryKey}}]);
 
     if (!$result) {
       throw new Exception('{{className}} not found');
     }
     return $result;
   }
+
   public function create($data): int|string
   {
     return $this->conn->insert('{{tableName}}', $data);
