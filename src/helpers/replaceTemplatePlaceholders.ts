@@ -1,12 +1,12 @@
 export function replaceTemplatePlaceholders(
-  content: any,
-  replacements: { [s: string]: unknown } | ArrayLike<unknown>
+	content: string,
+	replacements: { [s: string]: unknown } | ArrayLike<unknown>,
 ) {
-  return Object.entries(replacements).reduce(
-    (result, [placeholder, replacement]) => {
-      const regex = new RegExp(`{{${placeholder}}}`, 'g');
-      return result.replace(regex, replacement);
-    },
-    content
-  );
+	return Object.entries(replacements).reduce(
+		(result, [placeholder, replacement]) => {
+			const regex = new RegExp(`{{${placeholder}}}`, "g");
+			return result.replace(regex, replacement as string);
+		},
+		content,
+	);
 }

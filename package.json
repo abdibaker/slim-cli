@@ -26,6 +26,7 @@
   "author": "Abdillah Bakari Ali",
   "license": "MIT",
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "@types/archiver": "^5.3.4",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.11.20",
