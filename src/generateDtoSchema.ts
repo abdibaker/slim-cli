@@ -96,7 +96,7 @@ export async function getColumnTypeInfo(
     columnsWithType = (
       await connection.raw(
         `
-       SELECT DISTINCT COLUMN_NAME as column_name, data_type as data_type, COLUMN_TYPE as column_type
+        SELECT DISTINCT COLUMN_NAME as column_name, data_type as data_type, COLUMN_TYPE as column_type
         FROM information_schema.columns
         WHERE table_schema = '${DB_NAME}'
         AND COLUMN_NAME IN (${columns.map(item => `'${item}'`).join(',')})`
@@ -122,7 +122,16 @@ export async function getColumnTypeInfo(
     throw new Error(`Unsupported database client: ${client}`);
   }
 
-  return columnsWithType;
+  return columns.map(col => {
+    const foundColumn = columnsWithType.find(c => c.column_name === col);
+    return (
+      foundColumn || {
+        column_name: col,
+        data_type: 'string',
+        is_nullable: 'YES',
+      }
+    );
+  });
 }
 
 function buildSchemaObject(columnsWithType: ColumnInfo[]): object {
