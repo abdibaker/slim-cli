@@ -248,11 +248,16 @@ export async function generateSwagger() {
         // Use group prefix if route belongs to a group, otherwise use controller prefix
         const finalPath = belongsToGroup ? path : `/${kebabCaseClassName(tag)}${path}`;
         
+        // Use group name for tag when route belongs to a group, otherwise use controller name
+        const finalTag = belongsToGroup 
+          ? inflection.camelize(belongsToGroup.prefix?.replace('/', '') || tag)
+          : inflection.camelize(tag);
+        
         const routeObj = {
           path: finalPath,
           method,
           controller,
-          tag: inflection.camelize(tag),
+          tag: finalTag,
           action,
           parameters: JSON.stringify(parameters),
         };
