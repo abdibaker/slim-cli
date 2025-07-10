@@ -71,11 +71,8 @@ export async function extractQueryParams(
     const paramsRegex = /\$params\[['"](\w+)['"]\]/g;
 
     const queryParams: SwaggerPathParameters[] = [];
-    let match: RegExpExecArray | null;
-
     // Process the first pattern (request->getQueryParams)
-    match = queryParamRegex.exec(functionContent);
-    while (match !== null) {
+    for (const match of functionContent.matchAll(queryParamRegex)) {
       // Ensure we have a capture group match
       if (match?.[1]) {
         const paramName = match[1];
@@ -93,8 +90,7 @@ export async function extractQueryParams(
     }
 
     // Process the second pattern ($params)
-    match = paramsRegex.exec(functionContent);
-    while (match !== null) {
+    for (const match of functionContent.matchAll(paramsRegex)) {
       // Ensure we have a capture group match
       if (match?.[1]) {
         const paramName = match[1];

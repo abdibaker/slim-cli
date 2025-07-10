@@ -4,7 +4,7 @@
     "slim": "dist/index.js"
   },
   "type": "module",
-  "version": "0.7.0-beta",
+  "version": "0.7.1-beta",
   "description": "Slim CLI",
   "main": "./dist/index.js",
   "scripts": {

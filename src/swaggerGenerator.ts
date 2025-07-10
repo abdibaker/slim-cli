@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import inflection from 'inflection';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { ROUTES_FILE, getServicePath } from './CONST.js';
+import { ROUTES_FILE } from './CONST.js';
 import { fetchPrimaryKeyType, identifyTableName } from './db.js';
 import { generateDtoSchema } from './generateDtoSchema.js';
 import { kebabCaseClassName } from './helpers/kebabCaseClassName.js';
@@ -104,8 +104,58 @@ const swagger: SwaggerSchema = {
 export async function generateSwagger() {
   const routeContent: string = readFileContent(ROUTES_FILE);
 
+  // Updated pattern to handle routes with middleware (->add()) and without
   const routePattern: RegExp =
-    /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\);)/g;
+    /(\$app->\w+\(['"](?:\/[^'"]*)*['"]\s*,?\s*["'].*?["']\)(?:->add\([^)]*\))?;)/g;
+
+  // Pattern to extract group definitions and their prefixes
+  const groupPattern: RegExp = /\$app->group\(['"]([^'"]+)['"],/g;
+
+  // Extract all groups and their prefixes
+  const groups: {
+    prefix: string | undefined;
+    startIndex: number;
+    endIndex: number;
+  }[] = [];
+  let groupMatch: RegExpExecArray | null = groupPattern.exec(routeContent);
+  while (groupMatch !== null) {
+    const prefix = groupMatch[1];
+    const startIndex = groupMatch.index;
+
+    // Find the matching closing brace for this group
+    let braceCount = 0;
+    let endIndex = startIndex;
+    let inString = false;
+    let stringChar = '';
+
+    for (let i = startIndex; i < routeContent.length; i++) {
+      const char = routeContent[i];
+
+      if ((char === '"' || char === "'") && routeContent[i - 1] !== '\\') {
+        if (!inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar) {
+          inString = false;
+          stringChar = '';
+        }
+      }
+
+      if (!inString) {
+        if (char === '{') braceCount++;
+        if (char === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            endIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    groups.push({ prefix, startIndex, endIndex });
+    groupMatch = groupPattern.exec(routeContent);
+  }
 
   const matches: RegExpMatchArray | null = routeContent.match(routePattern);
 
@@ -115,8 +165,23 @@ export async function generateSwagger() {
         const method = (
           route.match(/\$\w+->(\w+)\(/) as RegExpMatchArray
         )[1]?.toLowerCase();
-        let path = (route.match(/'\S*'/) as RegExpMatchArray)[0];
+        const pathMatch = route.match(/'\S*'/);
+        if (!pathMatch) {
+          return;
+        }
+        let path = pathMatch[0];
         path = path.substring(1, path.length - 1);
+
+        // Find which group this route belongs to
+        const routeIndex: number = routeContent.indexOf(route);
+        const belongsToGroup = groups.find(
+          group => routeIndex > group.startIndex && routeIndex < group.endIndex
+        );
+
+        // Add group prefix to path if route belongs to a group
+        if (belongsToGroup) {
+          path = belongsToGroup.prefix + path;
+        }
 
         if (!method) {
           return;
@@ -180,8 +245,11 @@ export async function generateSwagger() {
           parameters = [...parameters, ...queryParams];
         }
 
+        // Use group prefix if route belongs to a group, otherwise use controller prefix
+        const finalPath = belongsToGroup ? path : `/${kebabCaseClassName(tag)}${path}`;
+        
         const routeObj = {
-          path: `/${kebabCaseClassName(tag)}${path}`,
+          path: finalPath,
           method,
           controller,
           tag: inflection.camelize(tag),
