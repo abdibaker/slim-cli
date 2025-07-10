@@ -197,7 +197,13 @@ export async function generateSwagger() {
 
         const parts: string[] = route.split(',');
 
-        const [tag, action]: string[] = parts[parts.length - 1]
+        // Extract the controller string part (between quotes)
+        const controllerPart = parts[parts.length - 1];
+        
+        // Handle middleware by extracting only the part before any ->add() call
+        const controllerString = controllerPart?.split('")')[0] || controllerPart;
+        
+        const [tag, action]: string[] = controllerString
           ?.replace(/[);{$"\s]/g, '')
           .split('}') || ['', ''];
 
